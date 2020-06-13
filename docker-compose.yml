@@ -1,0 +1,61 @@
+version: '3'
+services:
+  db:
+    image: mdillon/postgis
+    restart: on-failure
+    ports:
+      - 5222:5432
+    volumes:
+      - ./pg-init-scripts:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_MULTIPLE_DATABASES: ${DB_DATABASE}, ${DB_TESTING}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.1
+    container_name: kusele_es
+    environment:
+      - node.name=es
+      - bootstrap.memory_lock=true
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data:/usr/share/elasticsearch/data
+    ports:
+      - 7200:9200
+    networks:
+      - elastic
+  es_testing:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.1
+    container_name: kusele_es_tesing
+    environment:
+      - node.name=es_testing
+      - bootstrap.memory_lock=false
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+
+volumes:
+  data:
+    driver: local
+  data_testing:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge

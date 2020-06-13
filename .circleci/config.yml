@@ -1,0 +1,63 @@
+# Use the latest 2.1 version of CircleCI pipeline processing engine, see https://circleci.com/docs/2.0/configuration-reference/
+version: 2.1
+
+jobs:
+  build-job:
+    docker:
+      # specify the version you desire here
+      - image: circleci/node:13.14.0
+        environment:
+          - NODE_ENV: test
+          - PORT: 4000
+      - image: mdillon/postgis
+        environment:
+          POSTGRES_USER: kusele
+          POSTGRES_DB: kusele_db_testing
+          POSTGRES_PASSWORD: supersu
+      - image: docker.elastic.co/elasticsearch/elasticsearch:7.7.1
+        container_name: kusele_es_tesing
+        environment:
+          - node.name=es_testing
+          - bootstrap.memory_lock=false
+          - cluster.name=es-docker-cluster
+          - discovery.type=single-node
+          - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        ulimits:
+          memlock:
+            soft: -1
+            hard: -1
+        volumes:
+          - data:/usr/share/elasticsearch/data
+        ports:
+          - 9200:9200
+        networks:
+          - elastic
+
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - Yarndependencies-{{ checksum "yarn.lock" }}
+            - Yarndependencies-
+      - run:
+          name: Install Dependencies
+          command: yarn install
+
+      - save_cache:
+          paths:
+            - /home/circleci/app/api/node_modules
+          key: Yarndependencies-{{ checksum "yarn.lock" }}
+
+      - run:
+          name: start lint
+          command: yarn lint
+
+      - run:
+          name: unit Testing
+          command: yarn test
+
+workflows:
+  version: 2.1
+  build:
+    jobs:
+      - build-job

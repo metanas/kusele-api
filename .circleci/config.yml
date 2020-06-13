@@ -11,7 +11,6 @@ jobs:
           - PORT: 4000
       - image: mdillon/postgis
         environment:
-          PORT: 5222
           POSTGRES_USER: kusele
           POSTGRES_DB: kusele_db_testing
           POSTGRES_PASSWORD: supersu

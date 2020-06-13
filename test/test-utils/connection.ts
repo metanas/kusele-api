@@ -6,7 +6,7 @@ export const connection = (drop = false): Promise<Connection> => {
   return createConnection({
     type: "postgres",
     host: "localhost",
-    port: 5222,
+    port: 5432,
     username: process.env.DB_USERNAME,
     database: process.env.DB_TESTING,
     password: process.env.DB_PASSWORD,

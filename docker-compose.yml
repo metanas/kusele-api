@@ -4,7 +4,7 @@ services:
     image: mdillon/postgis
     restart: on-failure
     ports:
-      - 5222:5432
+      - 5432:5432
     volumes:
       - ./pg-init-scripts:/docker-entrypoint-initdb.d
     environment:

@@ -8,6 +8,10 @@ jobs:
       - image: circleci/node:13.14.0
         environment:
           - NODE_ENV: test
+          - DB_USERNAME: kusele
+          - DB_PASSWORD: supersu
+          - DB_DATABASE: kusele_db
+          - DB_TESTING: kusele_db_testing
           - PORT: 4000
       - image: mdillon/postgis
         environment:

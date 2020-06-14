@@ -6,4 +6,5 @@ module.exports = {
   },
   collectCoverage: true,
   collectCoverageFrom: ["src/Resolvers/**/*.ts"],
+  testTimeout: 20000,
 };

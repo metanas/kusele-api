@@ -15,7 +15,13 @@ export class AdminResolver {
 
   @Query(() => Admin)
   public async getAdmin(@Arg("id") id: string): Promise<Admin> {
-    return await Admin.findOne({ where: { id } });
+    const admin = await Admin.findOne({ where: { id } });
+
+    if (!admin) {
+      throw new Error("Admin not found!");
+    }
+
+    return admin;
   }
 
   @Query(() => PaginatedAdminResponse)
@@ -28,7 +34,7 @@ export class AdminResolver {
     if (name || email) {
       params = {
         query: {
-          match: {
+          match_phrase: {
             username: name,
             email,
           },
@@ -40,6 +46,7 @@ export class AdminResolver {
       index: "admin",
       from: (page - 1) * limit,
       size: limit,
+      sort: "create_at:desc",
       body: params,
     });
 

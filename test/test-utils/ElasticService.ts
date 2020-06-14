@@ -6,4 +6,8 @@ export class ElasticServiceTesting {
   get client(): Client {
     return this._client;
   }
+
+  close(): void {
+    this._client.close();
+  }
 }

@@ -18,8 +18,9 @@ describe("Test Admin Resolver", () => {
     done();
   });
 
-  afterAll(async () => {
+  afterAll(async (done) => {
     await conn.close();
+    done();
   });
 
   it("Test Getting Get By ID", async (done) => {
@@ -340,7 +341,7 @@ describe("Test Admin Resolver", () => {
     done();
   });
 
-  it("Test login with not found admin", async () => {
+  it("Test login with not found admin", async (done) => {
     const loginMutation = `mutation {
       login(email: "${faker.internet.email()}", password: "${faker.random.alphaNumeric(10)}") {
         id
@@ -353,9 +354,10 @@ describe("Test Admin Resolver", () => {
     });
 
     expect(response.errors).toMatchObject([new Error("Admin not found!")]);
+    done();
   });
 
-  it("Test login with disabled account", async () => {
+  it("Test login with disabled account", async (done) => {
     const adminGroup = await createAdminGroupHelper();
     admin = await createAdminHelper(adminGroup);
 
@@ -395,6 +397,7 @@ describe("Test Admin Resolver", () => {
     expect(response.errors).toMatchObject([
       new Error("Your account is inactive, please contact support for more information!"),
     ]);
+    done();
   });
 
   it("Test login when password is incorrect", async (done) => {

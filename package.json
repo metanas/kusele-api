@@ -61,7 +61,7 @@
       "start": "ts-node-dev src/index.ts",
       "lint": "eslint ./src/**/*.ts --fix",
       "db:setup": "ts-node ./test/test-utils/setup.ts",
-      "test": "yarn db:setup && jest --runInBand",
+      "test": "yarn db:setup && jest --runInBand --detectOpenHandles --forceExit",
       "testUnit": "jest --runInBand -o"
    }
 }

@@ -1,4 +1,4 @@
-import { Arg, Args, Mutation, Query, Resolver } from "type-graphql";
+import { Arg, Args, ForbiddenError, Mutation, Query, Resolver, Ctx } from "type-graphql";
 import { Admin } from "../../entity/Admin";
 import { PaginatedAdminResponse, PaginatedAdminResponseType } from "../../@types/PaginatedResponseTypes";
 import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
@@ -7,6 +7,12 @@ import { ceil } from "lodash";
 import { Inject } from "typedi";
 import { AdminArgs } from "../../modules/Args/AdminArgs";
 import { ElasticServiceTesting } from "../../../test/test-utils/ElasticService";
+import { Mailer } from "../../utils/Mailer";
+import { StateEnum } from "../../@types/StateEnum";
+import { compare, hash } from "bcryptjs";
+import { ApiContext } from "../../@types/ApiContext";
+import { sign } from "jsonwebtoken";
+import { redis } from "../../utils/redis";
 
 @Resolver()
 export class AdminResolver {
@@ -71,6 +77,134 @@ export class AdminResolver {
       id: admin.id,
       body: admin,
     });
+
+    await this.resendEmail(email, admin.id);
+
+    return admin;
+  }
+
+  @Mutation(() => Boolean)
+  private async resendEmail(@Arg("email") email: string, @Arg("id") id: string): Promise<boolean> {
+    await Admin.createQueryBuilder()
+      .update()
+      .set({
+        state: StateEnum.New,
+      })
+      .where("id=:id", { id })
+      .execute();
+
+    await this.elasticService.client.update({
+      index: "admin",
+      id,
+      body: {
+        doc: {
+          state: StateEnum.New,
+        },
+      },
+    });
+
+    const mailer = new Mailer();
+
+    mailer.send(email, "admin-invite", { email, link: `http://localhost:3000/admin/${id}/create` });
+
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  private async createAdmin(@Arg("id") id: string, @Args() { password, username }: AdminArgs): Promise<boolean> {
+    const { body } = await this.elasticService.client.getSource({
+      index: "admin",
+      id,
+    });
+
+    if (body.state !== StateEnum.New) {
+      throw new ForbiddenError();
+    }
+
+    const encryptedPassword = await hash(password, 12);
+
+    await Admin.createQueryBuilder()
+      .update()
+      .set({
+        password: encryptedPassword,
+        username,
+        state: StateEnum.Enabled,
+      })
+      .where("id=:id", { id })
+      .execute();
+
+    await this.elasticService.client.update({
+      index: "admin",
+      id,
+      refresh: "true",
+      body: {
+        doc: {
+          username,
+          password: encryptedPassword,
+          state: StateEnum.Enabled,
+        },
+      },
+    });
+
+    return true;
+  }
+
+  @Mutation(() => Admin)
+  private async adminToggleState(@Arg("id") id: string): Promise<Admin> {
+    const admin = await this.getAdmin(id);
+
+    const state = admin.state === StateEnum.Enabled ? StateEnum.Disabled : StateEnum.Enabled;
+
+    await Admin.createQueryBuilder()
+      .update()
+      .set({
+        state,
+      })
+      .where("id=:id", { id })
+      .execute();
+
+    await this.elasticService.client.update({
+      index: "admin",
+      id,
+      body: {
+        doc: {
+          state,
+        },
+      },
+    });
+
+    admin.state = state;
+
+    return admin;
+  }
+
+  @Mutation(() => Admin)
+  private async login(@Ctx() ctx: ApiContext, @Args() { email, username, password }: AdminArgs): Promise<Admin> {
+    const admin = await Admin.createQueryBuilder()
+      .select()
+      .where("email=:email", { email })
+      .orWhere("username=:username", { username })
+      .getOne();
+
+    if (!admin) {
+      throw new Error("Admin not found!");
+    }
+
+    const isCorrect = await compare(password, admin.password);
+
+    if (!isCorrect) {
+      throw new Error("Invalid password!");
+    }
+
+    if (admin.state !== StateEnum.Enabled) {
+      throw new Error("Your account is inactive, please contact support for more information!");
+    }
+
+    const token = sign(JSON.stringify(admin), "shhhhh");
+
+    await redis.set(token, JSON.stringify(admin));
+
+    ctx.res.setHeader("Authorization", `Bearer ${token}`);
 
     return admin;
   }

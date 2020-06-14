@@ -3,6 +3,7 @@ import { join } from "path";
 import { ApolloServer } from "apollo-server-express";
 import { Container } from "typedi";
 import { ElasticService } from "../utils/ElasticService";
+import { ApiContext } from "../@types/ApiContext";
 
 Container.set("elasticSearch", new ElasticService());
 
@@ -15,6 +16,6 @@ export const createApolloAdminService = async (): Promise<ApolloServer> => {
 
   return new ApolloServer({
     schema,
-    context: ({ req, res }) => ({ req, res }),
+    context: ({ req, res }: ApiContext) => ({ req, res }),
   });
 };

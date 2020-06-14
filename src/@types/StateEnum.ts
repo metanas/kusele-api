@@ -1,5 +1,5 @@
 export enum StateEnum {
-  New = "new",
-  Enabled = "enabled",
-  Disabled = "disabled",
+  New = "New",
+  Enabled = "Enabled",
+  Disabled = "Disabled",
 }

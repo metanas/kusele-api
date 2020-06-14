@@ -17,5 +17,10 @@ export const graphqlCall = async ({ source, isAdmin }: Options): Promise<Executi
   return graphql({
     schema,
     source,
+    contextValue: {
+      res: {
+        setHeader: jest.fn(),
+      },
+    },
   });
 };

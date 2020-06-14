@@ -4,10 +4,10 @@ import { AdminGroup } from "../../src/entity/AdminGroup";
 import { StateEnum } from "../../src/@types/StateEnum";
 import { ElasticServiceTesting } from "../test-utils/ElasticService";
 
-export async function createAdminHelper(group: AdminGroup, password?: string, active = true): Promise<Admin> {
+export async function createAdminHelper(group: AdminGroup, active = StateEnum.New): Promise<Admin> {
   const admin = await Admin.create({
     email: faker.internet.email(),
-    state: active ? StateEnum.Enabled : StateEnum.New,
+    state: active,
     group,
   }).save();
 
@@ -15,6 +15,7 @@ export async function createAdminHelper(group: AdminGroup, password?: string, ac
 
   await elastic.client.index({
     index: "admin",
+    id: admin.id,
     body: admin,
     refresh: "true",
   });

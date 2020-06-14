@@ -13,8 +13,7 @@ jobs:
           - DB_DATABASE: kusele_db
           - DB_TESTING: kusele_db_testing
           - PORT: 4000
-      - redis:
-          image: redis:alpine
+      - image: redis:alpine
       - image: mdillon/postgis
         environment:
           POSTGRES_USER: kusele

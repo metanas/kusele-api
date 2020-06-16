@@ -1,4 +1,4 @@
-import { Arg, Args, ForbiddenError, Mutation, Query, Resolver, Ctx } from "type-graphql";
+import { Arg, Args, ForbiddenError, Mutation, Query, Resolver, Ctx, UseMiddleware } from "type-graphql";
 import { Admin } from "../../entity/Admin";
 import { PaginatedAdminResponse, PaginatedAdminResponseType } from "../../@types/PaginatedResponseTypes";
 import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
@@ -13,12 +13,14 @@ import { compare, hash } from "bcryptjs";
 import { ApiContext } from "../../@types/ApiContext";
 import { sign } from "jsonwebtoken";
 import { redis } from "../../utils/redis";
+import { isAdmin } from "../../../middleware/Admin";
 
 @Resolver()
 export class AdminResolver {
   @Inject("elasticSearch")
   elasticService: ElasticService | ElasticServiceTesting;
 
+  @UseMiddleware(isAdmin)
   @Query(() => Admin)
   public async getAdmin(@Arg("id") id: string): Promise<Admin> {
     const admin = await Admin.findOne({ where: { id } });
@@ -30,6 +32,7 @@ export class AdminResolver {
     return admin;
   }
 
+  @UseMiddleware(isAdmin)
   @Query(() => PaginatedAdminResponse)
   public async getAdmins(
     @Arg("email") email: string,
@@ -66,6 +69,7 @@ export class AdminResolver {
     };
   }
 
+  @UseMiddleware(isAdmin)
   @Mutation(() => Admin, { nullable: true })
   private async addAdmin(@Args() { email }: AdminArgs): Promise<Admin> {
     const admin = await Admin.create({
@@ -83,6 +87,7 @@ export class AdminResolver {
     return admin;
   }
 
+  @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
   private async resendEmail(@Arg("email") email: string, @Arg("id") id: string): Promise<boolean> {
     await Admin.createQueryBuilder()
@@ -149,6 +154,7 @@ export class AdminResolver {
     return true;
   }
 
+  @UseMiddleware(isAdmin)
   @Mutation(() => Admin)
   private async adminToggleState(@Arg("id") id: string): Promise<Admin> {
     const admin = await this.getAdmin(id);
@@ -200,7 +206,7 @@ export class AdminResolver {
       throw new Error("Your account is inactive, please contact support for more information!");
     }
 
-    const token = sign(JSON.stringify(admin), "shhhhh");
+    const token = sign(JSON.stringify(admin), process.env.ACCESS_TOKEN_SECRET);
 
     await redis.set(token, JSON.stringify(admin));
 

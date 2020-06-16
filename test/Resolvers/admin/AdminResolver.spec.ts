@@ -5,9 +5,10 @@ import { graphqlCall } from "../../test-utils/graphqlCall";
 import { createAdminHelper } from "../../helpers/createAdminHelper";
 import { createAdminGroupHelper } from "../../helpers/createAdminGroupHelper";
 import { truncate } from "../../helpers/truncateTables";
-import faker from "faker";
+import * as faker from "faker";
 import { StateEnum } from "../../../src/@types/StateEnum";
 import { ForbiddenError } from "type-graphql";
+import { loginHelper } from "../../helpers/loginHelper";
 
 describe("Test Admin Resolver", () => {
   let conn: Connection;
@@ -26,6 +27,7 @@ describe("Test Admin Resolver", () => {
   it("Test Getting Get By ID", async (done) => {
     const adminGroup = await createAdminGroupHelper();
     admin = await createAdminHelper(adminGroup);
+    const token = await loginHelper(admin);
 
     const getUserQuery = `{
       getAdmin(id: "${admin.id}" ){
@@ -39,6 +41,7 @@ describe("Test Admin Resolver", () => {
     const response = await graphqlCall({
       source: getUserQuery,
       isAdmin: true,
+      token,
     });
 
     expect(response).toMatchObject({
@@ -55,6 +58,10 @@ describe("Test Admin Resolver", () => {
   });
 
   it("Test get not found admin", async (done) => {
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup);
+    const token = await loginHelper(admin);
+
     const getUserQuery = `{
       getAdmin(id: "${faker.random.uuid()}" ){
         username
@@ -67,6 +74,7 @@ describe("Test Admin Resolver", () => {
     const response = await graphqlCall({
       source: getUserQuery,
       isAdmin: true,
+      token,
     });
 
     expect(response.errors[0].message).toEqual("Admin not found!");
@@ -84,6 +92,8 @@ describe("Test Admin Resolver", () => {
       admins.push({ email: admin.email });
     }
 
+    const token = await loginHelper(admin);
+
     const getAdminsQuery = `{
       getAdmins {
         data {
@@ -95,6 +105,7 @@ describe("Test Admin Resolver", () => {
     const response = await graphqlCall({
       source: getAdminsQuery,
       isAdmin: true,
+      token,
     });
 
     expect(response).toMatchObject({
@@ -119,6 +130,8 @@ describe("Test Admin Resolver", () => {
       admins.push({ id: admin.id });
     }
 
+    const token = await loginHelper(admin);
+
     const getAdminsQuery = `{
       getAdmins(page: 2, limit: 7) {
         data {
@@ -132,6 +145,7 @@ describe("Test Admin Resolver", () => {
     const response = await graphqlCall({
       source: getAdminsQuery,
       isAdmin: true,
+      token,
     });
 
     expect(response).toMatchObject({
@@ -150,6 +164,7 @@ describe("Test Admin Resolver", () => {
   it("Test get admins by email", async (done) => {
     const adminGroup = await createAdminGroupHelper();
     admin = await createAdminHelper(adminGroup);
+    const token = await loginHelper(admin);
 
     const getAdminsQuery = `{
       getAdmins(email: "${admin.email}") {
@@ -162,6 +177,7 @@ describe("Test Admin Resolver", () => {
     const response = await graphqlCall({
       source: getAdminsQuery,
       isAdmin: true,
+      token,
     });
 
     expect(response).toMatchObject({
@@ -176,6 +192,10 @@ describe("Test Admin Resolver", () => {
   });
 
   it("Test add new admin", async (done) => {
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup);
+    const token = await loginHelper(admin);
+
     const email = faker.internet.email();
     const addAdminMutation = `mutation {
       addAdmin(email: "${email}") {
@@ -188,6 +208,7 @@ describe("Test Admin Resolver", () => {
     const response = await graphqlCall({
       source: addAdminMutation,
       isAdmin: true,
+      token,
     });
 
     expect(response).toMatchObject({
@@ -220,6 +241,8 @@ describe("Test Admin Resolver", () => {
 
     expect(response.data.createAdmin).toBe(true);
 
+    const token = await loginHelper(admin);
+
     const getUserQuery = `{
       getAdmin(id: "${admin.id}" ){
         email
@@ -234,6 +257,7 @@ describe("Test Admin Resolver", () => {
     response = await graphqlCall({
       source: getUserQuery,
       isAdmin: true,
+      token,
     });
 
     expect(response).toMatchObject({
@@ -274,6 +298,7 @@ describe("Test Admin Resolver", () => {
   it("Test toggle state", async (done) => {
     const adminGroup = await createAdminGroupHelper();
     admin = await createAdminHelper(adminGroup, StateEnum.Disabled);
+    const token = await loginHelper(admin);
 
     const adminToggleStateMutation = `mutation {
       adminToggleState(id: "${admin.id}") {
@@ -284,6 +309,7 @@ describe("Test Admin Resolver", () => {
     let response = await graphqlCall({
       source: adminToggleStateMutation,
       isAdmin: true,
+      token,
     });
 
     expect(response.data).toMatchObject({
@@ -295,6 +321,7 @@ describe("Test Admin Resolver", () => {
     response = await graphqlCall({
       source: adminToggleStateMutation,
       isAdmin: true,
+      token,
     });
 
     expect(response.data).toMatchObject({
@@ -378,9 +405,12 @@ describe("Test Admin Resolver", () => {
       }
     }`;
 
+    const token = await loginHelper(admin);
+
     await graphqlCall({
       source: adminToggleStateMutation,
       isAdmin: true,
+      token,
     });
 
     const loginMutation = `mutation {

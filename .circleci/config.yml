@@ -12,6 +12,7 @@ jobs:
           - DB_PASSWORD: supersu
           - DB_DATABASE: kusele_db
           - DB_TESTING: kusele_db_testing
+          - ACCESS_TOKEN_SECRET: bWV0YW5hOmtpbmdjb2Rlcg==
           - PORT: 4000
       - image: redis:alpine
       - image: mdillon/postgis

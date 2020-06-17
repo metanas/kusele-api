@@ -460,4 +460,62 @@ describe("Test Admin Resolver", () => {
 
     done();
   });
+
+  it("Test delete new admin", async (done) => {
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup);
+    const user = await createAdminHelper(adminGroup);
+
+    const token = await loginHelper(admin);
+
+    const getUserQuery = `{
+      getAdmin(id: "${user.id}" ){
+        email
+        group {
+          name
+        }
+      }
+    }`;
+
+    let response = await graphqlCall({
+      source: getUserQuery,
+      isAdmin: true,
+      token,
+    });
+
+    expect(response).toMatchObject({
+      data: {
+        getAdmin: {
+          email: user.email,
+          group: {
+            name: adminGroup.name,
+          },
+        },
+      },
+    });
+
+    const deleteAdminMutation = `mutation {
+      deleteAdmin(id: "${user.id}")
+    }`;
+
+    response = await graphqlCall({
+      source: deleteAdminMutation,
+      isAdmin: true,
+      token,
+    });
+
+    expect(response.data).toMatchObject({
+      deleteAdmin: true,
+    });
+
+    response = await graphqlCall({
+      source: getUserQuery,
+      isAdmin: true,
+      token,
+    });
+
+    expect(response.errors[0].message).toEqual("Admin not found!");
+
+    done();
+  });
 });

@@ -214,4 +214,19 @@ export class AdminResolver {
 
     return admin;
   }
+
+  @UseMiddleware(isAdmin)
+  @Mutation(() => Boolean)
+  private async deleteAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
+    console.log(ctx);
+
+    await Admin.createQueryBuilder().delete().where("id=:id", { id }).execute();
+
+    await this.elasticService.client.delete({
+      index: "admin",
+      id,
+      refresh: "true",
+    });
+    return true;
+  }
 }

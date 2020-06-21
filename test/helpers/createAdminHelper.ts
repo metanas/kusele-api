@@ -1,5 +1,5 @@
 import { Admin } from "../../src/entity/Admin";
-import faker from "faker";
+import * as faker from "faker";
 import { AdminGroup } from "../../src/entity/AdminGroup";
 import { StateEnum } from "../../src/@types/StateEnum";
 import { ElasticServiceTesting } from "../test-utils/ElasticService";

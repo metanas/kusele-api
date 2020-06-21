@@ -1,5 +1,6 @@
 import { ArgsType, Field } from "type-graphql";
 import { IsInt, IsString, Max, Min } from "class-validator";
+import { OrderEnum } from "../../@types/OrderEnum";
 
 @ArgsType()
 export class PaginatedRequestArgs {
@@ -16,4 +17,10 @@ export class PaginatedRequestArgs {
   @Field({ nullable: true })
   @IsString()
   public name?: string;
+
+  @Field({ nullable: true })
+  public order: string;
+
+  @Field({ defaultValue: OrderEnum.ASC })
+  public sort: string;
 }

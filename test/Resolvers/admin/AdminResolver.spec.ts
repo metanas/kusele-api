@@ -43,6 +43,7 @@ describe("Test Admin Resolver", () => {
       source: getUserQuery,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response).toMatchObject({
@@ -76,6 +77,7 @@ describe("Test Admin Resolver", () => {
       source: getUserQuery,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response.errors[0].message).toEqual("Admin not found!");
@@ -107,6 +109,7 @@ describe("Test Admin Resolver", () => {
       source: getAdminsQuery,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response).toMatchObject({
@@ -147,6 +150,7 @@ describe("Test Admin Resolver", () => {
       source: getAdminsQuery,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response).toMatchObject({
@@ -179,6 +183,7 @@ describe("Test Admin Resolver", () => {
       source: getAdminsQuery,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response).toMatchObject({
@@ -210,6 +215,7 @@ describe("Test Admin Resolver", () => {
       source: addAdminMutation,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response).toMatchObject({
@@ -259,6 +265,7 @@ describe("Test Admin Resolver", () => {
       source: getUserQuery,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response).toMatchObject({
@@ -312,8 +319,9 @@ describe("Test Admin Resolver", () => {
       source: adminToggleStateMutation,
       isAdmin: true,
       token,
+      admin: superAdmin,
     });
-
+    console.log(response.errors);
     expect(response.data).toMatchObject({
       adminToggleState: {
         state: StateEnum.Enabled,
@@ -324,6 +332,7 @@ describe("Test Admin Resolver", () => {
       source: adminToggleStateMutation,
       isAdmin: true,
       token,
+      admin: superAdmin,
     });
 
     expect(response.data).toMatchObject({
@@ -418,6 +427,7 @@ describe("Test Admin Resolver", () => {
       source: adminToggleStateMutation,
       isAdmin: true,
       token,
+      admin: superAdmin,
     });
 
     const loginMutation = `mutation {
@@ -486,6 +496,7 @@ describe("Test Admin Resolver", () => {
       source: deleteAdminMutation,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response.errors).toEqual([new Error("You can delete enable/disable admin")]);
@@ -506,6 +517,7 @@ describe("Test Admin Resolver", () => {
     const response = await graphqlCall({
       source: resendEmail,
       token,
+      admin,
       isAdmin: true,
     });
 
@@ -534,6 +546,7 @@ describe("Test Admin Resolver", () => {
       source: getUserQuery,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response).toMatchObject({
@@ -555,6 +568,7 @@ describe("Test Admin Resolver", () => {
       source: deleteAdminMutation,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response.data).toMatchObject({
@@ -565,6 +579,7 @@ describe("Test Admin Resolver", () => {
       source: getUserQuery,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response.errors[0].message).toEqual("Admin not found!");
@@ -587,6 +602,7 @@ describe("Test Admin Resolver", () => {
       source: adminToggleStateMutation,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response.errors[0].message).toBe(new ForbiddenError().message);
@@ -610,6 +626,7 @@ describe("Test Admin Resolver", () => {
       source: resetPasswordMutation,
       isAdmin: true,
       token,
+      admin,
     });
 
     expect(response.data).toMatchObject({

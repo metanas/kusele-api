@@ -12,8 +12,8 @@ export class setupAdmin1592169347318 implements MigrationInterface {
     const group = await AdminGroup.create({
       name: "administrator",
       permissions: {
-        access: [],
-        modify: [],
+        access: ["ADMIN"],
+        modify: ["ADMIN"],
       },
     }).save();
     const admin = await Admin.create({

@@ -3,6 +3,7 @@ import { join } from "path";
 import { GraphQLSchema } from "graphql";
 import { Container } from "typedi";
 import { ElasticServiceTesting } from "./ElasticService";
+import { Roles } from "../../middleware/Roles";
 
 Container.set("elasticSearch", new ElasticServiceTesting());
 
@@ -15,5 +16,6 @@ export const createSchema = (isAdmin = false): Promise<GraphQLSchema> => {
     ],
     nullableByDefault: true,
     container: Container,
+    authChecker: Roles,
   });
 };

@@ -6,6 +6,7 @@ import { ElasticService } from "../utils/ElasticService";
 import { ApiContext } from "../@types/ApiContext";
 import { last, set } from "lodash";
 import { verify } from "jsonwebtoken";
+import { Roles } from "../../middleware/Roles";
 
 Container.set("elasticSearch", new ElasticService());
 
@@ -13,6 +14,7 @@ export const createApolloAdminService = async (): Promise<ApolloServer> => {
   const schema = await buildSchema({
     resolvers: [join(__dirname, "../Resolvers/admin/**/*.Resolver.ts")],
     nullableByDefault: true,
+    authChecker: Roles,
     container: Container,
   });
 

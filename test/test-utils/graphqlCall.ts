@@ -1,22 +1,21 @@
 import { graphql, GraphQLSchema } from "graphql";
 import { createSchema } from "./createSchema";
 import { ExecutionResult } from "graphql/execution/execute";
-import { redis } from "../../src/utils/redis";
+import { Admin } from "../../src/entity/Admin";
 
 interface Options {
   source: string;
   isAdmin?: boolean;
   token?: string;
+  admin?: Admin;
 }
 
 let schema: GraphQLSchema;
 
-export const graphqlCall = async ({ source, isAdmin, token }: Options): Promise<ExecutionResult> => {
+export const graphqlCall = async ({ source, isAdmin, token, admin }: Options): Promise<ExecutionResult> => {
   if (!schema) {
     schema = await createSchema(isAdmin);
   }
-
-  const user = JSON.parse(await redis.get(token));
 
   return graphql({
     schema,
@@ -30,7 +29,7 @@ export const graphqlCall = async ({ source, isAdmin, token }: Options): Promise<
       res: {
         setHeader: jest.fn(),
       },
-      user,
+      user: admin,
     },
   });
 };

@@ -6,10 +6,10 @@ import { redis } from "../../src/utils/redis";
 dotenv.config();
 
 export async function loginHelper(admin: Admin): Promise<string> {
-  const adminString = JSON.stringify(admin);
-  const token = await sign(adminString, process.env.ACCESS_TOKEN_SECRET);
+  const adminJson = JSON.stringify(admin);
+  const token = await sign(adminJson, process.env.ACCESS_TOKEN_SECRET);
 
-  await redis.set(token, adminString);
+  await redis.set(admin.id, adminJson);
 
   return token;
 }

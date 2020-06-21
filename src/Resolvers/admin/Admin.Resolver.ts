@@ -1,4 +1,4 @@
-import { Arg, Args, Ctx, ForbiddenError, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
+import { Arg, Args, Authorized, Ctx, ForbiddenError, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
 import { Admin } from "../../entity/Admin";
 import { PaginatedAdminResponse, PaginatedAdminResponseType } from "../../@types/PaginatedResponseTypes";
 import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
@@ -12,9 +12,10 @@ import { StateEnum } from "../../@types/StateEnum";
 import { compare, hash } from "bcryptjs";
 import { ApiContext } from "../../@types/ApiContext";
 import { sign } from "jsonwebtoken";
-import { isAdmin } from "../../../middleware/Admin";
+import { isAdmin } from "../../../middleware/isAdmin";
 import { randomBytes } from "crypto";
 import { LoginResponse } from "../../@types/LoginResponse";
+import { redis } from "../../utils/redis";
 
 @Resolver()
 export class AdminResolver {
@@ -22,6 +23,7 @@ export class AdminResolver {
   elasticService: ElasticService | ElasticServiceTesting;
 
   @UseMiddleware(isAdmin)
+  @Authorized("ADMIN")
   @Query(() => Admin)
   public async getAdmin(@Arg("id") id: string): Promise<Admin> {
     const admin = await Admin.findOne({ where: { id }, relations: ["group"] });
@@ -244,7 +246,11 @@ export class AdminResolver {
       throw new Error("Your account is inactive, please contact support for more information!");
     }
 
-    const token = sign(JSON.stringify(admin), process.env.ACCESS_TOKEN_SECRET);
+    const adminJson = JSON.stringify(admin);
+
+    const token = sign(adminJson, process.env.ACCESS_TOKEN_SECRET);
+
+    await redis.set(admin.id, adminJson);
 
     return {
       token,
@@ -252,6 +258,7 @@ export class AdminResolver {
     };
   }
 
+  @Authorized("ADMIN")
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
   private async deleteAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {

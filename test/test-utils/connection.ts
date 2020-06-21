@@ -1,5 +1,5 @@
 import { Connection, createConnection } from "typeorm";
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 
 dotenv.config();
 export const connection = (drop = false): Promise<Connection> => {

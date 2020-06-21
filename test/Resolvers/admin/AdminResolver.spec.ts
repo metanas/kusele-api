@@ -352,7 +352,9 @@ describe("Test Admin Resolver", () => {
 
     const loginMutation = `mutation {
       login(username: "${admin.email}", password: "${password}") {
-        id
+        admin {
+          id
+        }
       }
     }`;
 
@@ -363,7 +365,7 @@ describe("Test Admin Resolver", () => {
 
     expect(response.data).toMatchObject({
       login: {
-        id: admin.id,
+        admin: { id: admin.id },
       },
     });
 
@@ -373,7 +375,9 @@ describe("Test Admin Resolver", () => {
   it("Test login with not found admin", async (done) => {
     const loginMutation = `mutation {
       login(username: "${faker.internet.email()}", password: "${faker.random.alphaNumeric(10)}") {
-        id
+        admin {
+          id
+        }
       }
     }`;
 
@@ -418,7 +422,9 @@ describe("Test Admin Resolver", () => {
 
     const loginMutation = `mutation {
       login(username: "${admin.email}", password: "${password}") {
-        id
+        admin {
+          id
+        }
       }
     }`;
 
@@ -450,7 +456,9 @@ describe("Test Admin Resolver", () => {
 
     const loginMutation = `mutation {
       login(username: "${admin.email}", password: "${faker.random.alphaNumeric(10)}") {
-        id
+        admin {
+          id
+        }
       }
     }`;
 

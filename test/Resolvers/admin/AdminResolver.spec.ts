@@ -352,7 +352,9 @@ describe("Test Admin Resolver", () => {
 
     const loginMutation = `mutation {
       login(username: "${admin.email}", password: "${password}") {
-        id
+        admin {
+          id
+        }
       }
     }`;
 
@@ -363,7 +365,7 @@ describe("Test Admin Resolver", () => {
 
     expect(response.data).toMatchObject({
       login: {
-        id: admin.id,
+        admin: { id: admin.id },
       },
     });
 

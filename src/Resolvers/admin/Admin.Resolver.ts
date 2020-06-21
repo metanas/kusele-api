@@ -12,9 +12,9 @@ import { StateEnum } from "../../@types/StateEnum";
 import { compare, hash } from "bcryptjs";
 import { ApiContext } from "../../@types/ApiContext";
 import { sign } from "jsonwebtoken";
-import { redis } from "../../utils/redis";
 import { isAdmin } from "../../../middleware/Admin";
 import { randomBytes } from "crypto";
+import { LoginResponse } from "../../@types/LoginResponse";
 
 @Resolver()
 export class AdminResolver {
@@ -217,12 +217,12 @@ export class AdminResolver {
     return admin;
   }
 
-  @Mutation(() => Admin)
+  @Mutation(() => LoginResponse)
   private async login(
     @Ctx() ctx: ApiContext,
     @Arg("username") username: string,
     @Arg("password") password: string,
-  ): Promise<Admin> {
+  ): Promise<LoginResponse> {
     const admin = await Admin.createQueryBuilder("admin")
       .select()
       .innerJoinAndSelect("admin.group", "group")
@@ -246,11 +246,10 @@ export class AdminResolver {
 
     const token = sign(JSON.stringify(admin), process.env.ACCESS_TOKEN_SECRET);
 
-    await redis.set(token, JSON.stringify(admin));
-
-    ctx.res.setHeader("Authorization", `Bearer ${token}`);
-
-    return admin;
+    return {
+      token,
+      admin,
+    };
   }
 
   @UseMiddleware(isAdmin)

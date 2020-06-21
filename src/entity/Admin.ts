@@ -1,4 +1,12 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  UpdateDateColumn,
+  CreateDateColumn,
+} from "typeorm";
 import { Field, ID, ObjectType } from "type-graphql";
 import { StateEnum } from "../@types/StateEnum";
 import { AdminGroup } from "./AdminGroup";
@@ -22,14 +30,24 @@ export class Admin extends BaseEntity {
   public password: string;
 
   @Field()
-  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  @CreateDateColumn()
   public create_at: string;
+
+  @Field()
+  @UpdateDateColumn({ nullable: true })
+  public update_at: string;
 
   @Field(() => StateEnum)
   @Column("text", { default: StateEnum.New })
   public state: StateEnum;
 
-  @ManyToOne(() => AdminGroup, (group: AdminGroup) => group.admin, { eager: true, nullable: true })
+  @Column({ nullable: true })
+  public reset_password_token: string;
+
+  @Column({ type: "timestamp", nullable: true })
+  public reset_password_send_at: Date;
+
+  @ManyToOne(() => AdminGroup, (group: AdminGroup) => group.admin, { nullable: true })
   @Field(() => AdminGroup)
   public group: AdminGroup;
 }

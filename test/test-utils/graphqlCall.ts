@@ -1,6 +1,7 @@
 import { graphql, GraphQLSchema } from "graphql";
 import { createSchema } from "./createSchema";
 import { ExecutionResult } from "graphql/execution/execute";
+import { redis } from "../../src/utils/redis";
 
 interface Options {
   source: string;
@@ -15,6 +16,8 @@ export const graphqlCall = async ({ source, isAdmin, token }: Options): Promise<
     schema = await createSchema(isAdmin);
   }
 
+  const user = JSON.parse(await redis.get(token));
+
   return graphql({
     schema,
     source,
@@ -27,6 +30,7 @@ export const graphqlCall = async ({ source, isAdmin, token }: Options): Promise<
       res: {
         setHeader: jest.fn(),
       },
+      user,
     },
   });
 };

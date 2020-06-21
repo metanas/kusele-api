@@ -1,4 +1,4 @@
-import { Arg, Args, ForbiddenError, Mutation, Query, Resolver, Ctx, UseMiddleware } from "type-graphql";
+import { Arg, Args, Ctx, ForbiddenError, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
 import { Admin } from "../../entity/Admin";
 import { PaginatedAdminResponse, PaginatedAdminResponseType } from "../../@types/PaginatedResponseTypes";
 import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
@@ -14,6 +14,7 @@ import { ApiContext } from "../../@types/ApiContext";
 import { sign } from "jsonwebtoken";
 import { redis } from "../../utils/redis";
 import { isAdmin } from "../../../middleware/Admin";
+import { randomBytes } from "crypto";
 
 @Resolver()
 export class AdminResolver {
@@ -23,7 +24,7 @@ export class AdminResolver {
   @UseMiddleware(isAdmin)
   @Query(() => Admin)
   public async getAdmin(@Arg("id") id: string): Promise<Admin> {
-    const admin = await Admin.findOne({ where: { id } });
+    const admin = await Admin.findOne({ where: { id }, relations: ["group"] });
 
     if (!admin) {
       throw new Error("Admin not found!");
@@ -36,9 +37,11 @@ export class AdminResolver {
   @Query(() => PaginatedAdminResponse)
   public async getAdmins(
     @Arg("email") email: string,
-    @Args() { name, limit, page }: PaginatedRequestArgs,
+    @Args() { name, limit, page, order, sort }: PaginatedRequestArgs,
   ): Promise<PaginatedAdminResponseType> {
     let params = {};
+
+    let sorted = "create_at:desc";
 
     if (name || email) {
       params = {
@@ -51,11 +54,15 @@ export class AdminResolver {
       };
     }
 
+    if (order) {
+      sorted = `${order}:${sort}`;
+    }
+
     const { body } = await this.elasticService.client.search({
       index: "admin",
       from: (page - 1) * limit,
       size: limit,
-      sort: "create_at:desc",
+      sort: sorted,
       body: params,
     });
 
@@ -71,7 +78,7 @@ export class AdminResolver {
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Admin, { nullable: true })
-  private async addAdmin(@Args() { email }: AdminArgs): Promise<Admin> {
+  private async addAdmin(@Arg("email") email: string): Promise<Admin> {
     const admin = await Admin.create({
       email,
     }).save();
@@ -82,35 +89,57 @@ export class AdminResolver {
       body: admin,
     });
 
-    await this.resendEmail(email, admin.id);
+    await this.resendEmail(admin.id);
 
     return admin;
   }
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
-  private async resendEmail(@Arg("email") email: string, @Arg("id") id: string): Promise<boolean> {
-    await Admin.createQueryBuilder()
-      .update()
-      .set({
-        state: StateEnum.New,
-      })
-      .where("id=:id", { id })
-      .execute();
+  private async resetPassword(@Arg("id") id: string): Promise<boolean> {
+    let admin = await this.getAdmin(id);
+
+    admin.reset_password_token = randomBytes(48).toString("hex");
+
+    admin.reset_password_send_at = new Date();
+
+    admin = await admin.save();
 
     await this.elasticService.client.update({
       index: "admin",
-      id,
+      id: admin.id,
       body: {
         doc: {
-          state: StateEnum.New,
+          reset_password_token: admin.reset_password_token,
+          reset_password_send_at: admin.reset_password_send_at,
         },
       },
     });
 
     const mailer = new Mailer();
 
-    mailer.send(email, "admin-invite", { email, link: `http://localhost:3000/admin/${id}/create` });
+    await mailer.send(admin.email, "admin-invite", {
+      email: admin.email,
+      link: `http://localhost:3000/admin/${admin.reset_password_token}/reset_token`,
+    });
+
+    return true;
+  }
+
+  @UseMiddleware(isAdmin)
+  @Mutation(() => Boolean)
+  private async resendEmail(@Arg("id") id: string): Promise<boolean> {
+    const admin = await this.getAdmin(id);
+    if (admin.state !== StateEnum.New) {
+      throw new ForbiddenError();
+    }
+
+    const mailer = new Mailer();
+
+    await mailer.send(admin.email, "admin-invite", {
+      email: admin.email,
+      link: `http://localhost:3000/admin/${id}/create`,
+    });
 
     return true;
   }
@@ -156,7 +185,11 @@ export class AdminResolver {
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Admin)
-  private async adminToggleState(@Arg("id") id: string): Promise<Admin> {
+  private async adminToggleState(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<Admin> {
+    if (ctx.user.id === id) {
+      throw new ForbiddenError();
+    }
+
     const admin = await this.getAdmin(id);
 
     const state = admin.state === StateEnum.Enabled ? StateEnum.Disabled : StateEnum.Enabled;
@@ -185,10 +218,15 @@ export class AdminResolver {
   }
 
   @Mutation(() => Admin)
-  private async login(@Ctx() ctx: ApiContext, @Args() { email, username, password }: AdminArgs): Promise<Admin> {
-    const admin = await Admin.createQueryBuilder()
+  private async login(
+    @Ctx() ctx: ApiContext,
+    @Arg("username") username: string,
+    @Arg("password") password: string,
+  ): Promise<Admin> {
+    const admin = await Admin.createQueryBuilder("admin")
       .select()
-      .where("email=:email", { email })
+      .innerJoinAndSelect("admin.group", "group")
+      .where("email=:username", { username })
       .orWhere("username=:username", { username })
       .getOne();
 
@@ -218,7 +256,11 @@ export class AdminResolver {
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
   private async deleteAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
-    console.log(ctx);
+    const admin = await this.getAdmin(id);
+
+    if (admin.state !== StateEnum.New) {
+      throw new Error("You can delete enable/disable admin");
+    }
 
     await Admin.createQueryBuilder().delete().where("id=:id", { id }).execute();
 

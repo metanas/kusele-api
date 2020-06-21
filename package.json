@@ -64,6 +64,8 @@
       "test": "yarn db:setup && jest --runInBand --detectOpenHandles --forceExit",
       "testUnit": "jest --runInBand -o",
       "migration:run": "ts-node node_modules/typeorm/cli.js migration:run",
-      "migration:revert": "ts-node node_modules/typeorm/cli.js migration:revert"
+      "migration:revert": "ts-node node_modules/typeorm/cli.js migration:revert",
+      "serve": "docker-compose up redis db es",
+      "serve:testing": "docker-compose up redis db es_testing"
    }
 }

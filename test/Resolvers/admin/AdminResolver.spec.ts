@@ -9,6 +9,7 @@ import * as faker from "faker";
 import { StateEnum } from "../../../src/@types/StateEnum";
 import { ForbiddenError } from "type-graphql";
 import { loginHelper } from "../../helpers/loginHelper";
+import { getAdmin } from "../../helpers/getAdmin";
 
 describe("Test Admin Resolver", () => {
   let conn: Connection;
@@ -95,7 +96,7 @@ describe("Test Admin Resolver", () => {
     const token = await loginHelper(admin);
 
     const getAdminsQuery = `{
-      getAdmins {
+      getAdmins(order: "create_at") {
         data {
           email 
         }
@@ -111,7 +112,7 @@ describe("Test Admin Resolver", () => {
     expect(response).toMatchObject({
       data: {
         getAdmins: {
-          data: admins.reverse(),
+          data: admins,
         },
       },
     });
@@ -297,8 +298,9 @@ describe("Test Admin Resolver", () => {
 
   it("Test toggle state", async (done) => {
     const adminGroup = await createAdminGroupHelper();
+    const superAdmin = await createAdminHelper(adminGroup, StateEnum.Enabled);
     admin = await createAdminHelper(adminGroup, StateEnum.Disabled);
-    const token = await loginHelper(admin);
+    const token = await loginHelper(superAdmin);
 
     const adminToggleStateMutation = `mutation {
       adminToggleState(id: "${admin.id}") {
@@ -349,7 +351,7 @@ describe("Test Admin Resolver", () => {
     });
 
     const loginMutation = `mutation {
-      login(email: "${admin.email}", password: "${password}") {
+      login(username: "${admin.email}", password: "${password}") {
         id
       }
     }`;
@@ -370,7 +372,7 @@ describe("Test Admin Resolver", () => {
 
   it("Test login with not found admin", async (done) => {
     const loginMutation = `mutation {
-      login(email: "${faker.internet.email()}", password: "${faker.random.alphaNumeric(10)}") {
+      login(username: "${faker.internet.email()}", password: "${faker.random.alphaNumeric(10)}") {
         id
       }
     }`;
@@ -386,6 +388,7 @@ describe("Test Admin Resolver", () => {
 
   it("Test login with disabled account", async (done) => {
     const adminGroup = await createAdminGroupHelper();
+    const superAdmin = await createAdminHelper(adminGroup);
     admin = await createAdminHelper(adminGroup);
 
     const password = faker.random.alphaNumeric(10);
@@ -405,7 +408,7 @@ describe("Test Admin Resolver", () => {
       }
     }`;
 
-    const token = await loginHelper(admin);
+    const token = await loginHelper(superAdmin);
 
     await graphqlCall({
       source: adminToggleStateMutation,
@@ -414,7 +417,7 @@ describe("Test Admin Resolver", () => {
     });
 
     const loginMutation = `mutation {
-      login(email: "${admin.email}", password: "${password}") {
+      login(username: "${admin.email}", password: "${password}") {
         id
       }
     }`;
@@ -446,7 +449,7 @@ describe("Test Admin Resolver", () => {
     });
 
     const loginMutation = `mutation {
-      login(email: "${admin.email}", password: "${faker.random.alphaNumeric(10)}") {
+      login(username: "${admin.email}", password: "${faker.random.alphaNumeric(10)}") {
         id
       }
     }`;
@@ -457,6 +460,48 @@ describe("Test Admin Resolver", () => {
     });
 
     expect(response.errors).toMatchObject([new Error("Invalid password!")]);
+
+    done();
+  });
+
+  it("Test delete enable/disable admin", async (done) => {
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup, StateEnum.Enabled);
+
+    const token = await loginHelper(admin);
+
+    const deleteAdminMutation = `mutation {
+      deleteAdmin(id: "${admin.id}")
+    }`;
+
+    const response = await graphqlCall({
+      source: deleteAdminMutation,
+      isAdmin: true,
+      token,
+    });
+
+    expect(response.errors).toEqual([new Error("You can delete enable/disable admin")]);
+
+    done();
+  });
+
+  it("Test resend email when is not new", async (done) => {
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup, StateEnum.Enabled);
+
+    const token = await loginHelper(admin);
+
+    const resendEmail = `mutation { 
+      resendEmail(id: "${admin.id}")
+    }`;
+
+    const response = await graphqlCall({
+      source: resendEmail,
+      token,
+      isAdmin: true,
+    });
+
+    expect(response.errors[0].message).toBe(new ForbiddenError().message);
 
     done();
   });
@@ -515,6 +560,58 @@ describe("Test Admin Resolver", () => {
     });
 
     expect(response.errors[0].message).toEqual("Admin not found!");
+
+    done();
+  });
+
+  it("Test Admin Toggle his account", async (done) => {
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup, StateEnum.Disabled);
+    const token = await loginHelper(admin);
+
+    const adminToggleStateMutation = `mutation {
+      adminToggleState(id: "${admin.id}") {
+        state
+      }
+    }`;
+
+    const response = await graphqlCall({
+      source: adminToggleStateMutation,
+      isAdmin: true,
+      token,
+    });
+
+    expect(response.errors[0].message).toBe(new ForbiddenError().message);
+
+    done();
+  });
+
+  it("Test Admin reset Password", async (done) => {
+    const group = await createAdminGroupHelper();
+    admin = await createAdminHelper(group);
+    const token = await loginHelper(admin);
+
+    expect(admin.reset_password_token).toBeNull();
+    expect(admin.reset_password_send_at).toBeNull();
+
+    const resetPasswordMutation = `mutation {
+      resetPassword(id: "${admin.id}")
+    }`;
+
+    const response = await graphqlCall({
+      source: resetPasswordMutation,
+      isAdmin: true,
+      token,
+    });
+
+    expect(response.data).toMatchObject({
+      resetPassword: true,
+    });
+
+    admin = await getAdmin(admin.id);
+
+    expect(admin.reset_password_token).not.toBeNull();
+    expect(admin.reset_password_send_at).not.toBeNull();
 
     done();
   });

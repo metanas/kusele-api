@@ -15,12 +15,22 @@ import { sign } from "jsonwebtoken";
 import { isAdmin } from "../../../middleware/isAdmin";
 import { randomBytes } from "crypto";
 import { LoginResponse } from "../../@types/LoginResponse";
-import { redis } from "../../utils/redis";
+import { AdminWhiteListJwt } from "../../entity/AdminWhiteListJwt";
 
 @Resolver()
 export class AdminResolver {
   @Inject("elasticSearch")
   elasticService: ElasticService | ElasticServiceTesting;
+
+  @UseMiddleware(isAdmin)
+  @Query(() => Admin)
+  private async me(@Ctx() ctx: ApiContext): Promise<Admin> {
+    const { body } = await this.elasticService.client.getSource({
+      index: "admin",
+      id: ctx.user.id,
+    });
+    return (body as unknown) as Admin;
+  }
 
   @UseMiddleware(isAdmin)
   @Authorized("ADMIN")
@@ -246,11 +256,12 @@ export class AdminResolver {
       throw new Error("Your account is inactive, please contact support for more information!");
     }
 
-    const adminJson = JSON.stringify(admin);
+    const token = await sign({ ...admin }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "30 days" });
 
-    const token = sign(adminJson, process.env.ACCESS_TOKEN_SECRET);
-
-    await redis.set(admin.id, adminJson);
+    await AdminWhiteListJwt.create({
+      admin,
+      jti: token,
+    }).save();
 
     return {
       token,
@@ -275,6 +286,13 @@ export class AdminResolver {
       id,
       refresh: "true",
     });
+    return true;
+  }
+
+  @UseMiddleware(isAdmin)
+  @Mutation(() => Boolean)
+  private async logout(@Ctx() ctx: ApiContext): Promise<boolean> {
+    await AdminWhiteListJwt.createQueryBuilder().delete().where("admin_id=id", { id: ctx.user.id }).execute();
     return true;
   }
 }

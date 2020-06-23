@@ -25,6 +25,36 @@ describe("Test Admin Resolver", () => {
     done();
   });
 
+  it("Test Admin get info", async (done) => {
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup);
+
+    const token = await loginHelper(admin);
+
+    const meQuery = `{
+      me {
+        id
+        email
+      }
+    }`;
+
+    const response = await graphqlCall({
+      source: meQuery,
+      isAdmin: true,
+      token,
+      admin,
+    });
+
+    expect(response.data).toMatchObject({
+      me: {
+        id: admin.id,
+        email: admin.email,
+      },
+    });
+
+    done();
+  });
+
   it("Test Getting Get By ID", async (done) => {
     const adminGroup = await createAdminGroupHelper();
     admin = await createAdminHelper(adminGroup);
@@ -321,7 +351,7 @@ describe("Test Admin Resolver", () => {
       token,
       admin: superAdmin,
     });
-    console.log(response.errors);
+
     expect(response.data).toMatchObject({
       adminToggleState: {
         state: StateEnum.Enabled,

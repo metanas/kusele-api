@@ -25,7 +25,9 @@ export const createApolloAdminService = async (): Promise<ApolloServer> => {
       const token = last(req.headers?.authorization?.split(" "));
 
       if (token) {
-        set(ctx, "user", verify(token, process.env.ACCESS_TOKEN_SECRET));
+        try {
+          set(ctx, "user", verify(token, process.env.ACCESS_TOKEN_SECRET));
+        } catch (e) {}
       }
 
       return ctx;

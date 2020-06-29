@@ -6,6 +6,7 @@ import {
   ManyToOne,
   UpdateDateColumn,
   CreateDateColumn,
+  JoinColumn,
 } from "typeorm";
 import { Field, ID, ObjectType } from "type-graphql";
 import { StateEnum } from "../@types/StateEnum";
@@ -49,5 +50,6 @@ export class Admin extends BaseEntity {
 
   @ManyToOne(() => AdminGroup, (group: AdminGroup) => group.admin, { nullable: true })
   @Field(() => AdminGroup)
+  @JoinColumn()
   public group: AdminGroup;
 }

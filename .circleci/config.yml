@@ -13,6 +13,7 @@ jobs:
           - DB_DATABASE: kusele_db
           - DB_TESTING: kusele_db_testing
           - ACCESS_TOKEN_SECRET: bWV0YW5hOmtpbmdjb2Rlcg==
+          - REFRESH_TOKEN_SECRET: vasDJKLwqejiJDSoejaodg==
           - PORT: 4000
       - image: redis:alpine
       - image: mdillon/postgis

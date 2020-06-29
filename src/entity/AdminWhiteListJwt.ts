@@ -9,8 +9,8 @@ export class AdminWhiteListJwt extends BaseEntity {
   @CreateDateColumn({ type: "timestamp", default: () => "(CURRENT_TIMESTAMP + '30 days'::interval)" })
   public expire_at: Date;
 
-  @Column()
-  public jti: string;
+  @Column({ default: 0 })
+  public version: number;
 
   @ManyToOne(() => Admin)
   public admin: Admin;

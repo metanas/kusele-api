@@ -11,11 +11,13 @@ import { Mailer } from "../../utils/Mailer";
 import { StateEnum } from "../../@types/StateEnum";
 import { compare, hash } from "bcryptjs";
 import { ApiContext } from "../../@types/ApiContext";
-import { sign } from "jsonwebtoken";
+import { verify } from "jsonwebtoken";
 import { isAdmin } from "../../../middleware/isAdmin";
 import { randomBytes } from "crypto";
 import { LoginResponse } from "../../@types/LoginResponse";
 import { AdminWhiteListJwt } from "../../entity/AdminWhiteListJwt";
+import { createAccessToken, createRefreshToken } from "../../utils/Authorization";
+import { redis } from "../../utils/redis";
 
 @Resolver()
 export class AdminResolver {
@@ -256,12 +258,15 @@ export class AdminResolver {
       throw new Error("Your account is inactive, please contact support for more information!");
     }
 
-    const token = await sign({ ...admin }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "30 days" });
-
-    await AdminWhiteListJwt.create({
+    const jit = await AdminWhiteListJwt.create({
       admin,
-      jti: token,
     }).save();
+
+    ctx.res.cookie("jid", createRefreshToken({ id: jit.id, version: jit.version }));
+
+    await redis.set(jit.id, JSON.stringify({ ...admin, version: jit.version }));
+
+    const token = createAccessToken({ id: admin.id });
 
     return {
       token,
@@ -292,7 +297,12 @@ export class AdminResolver {
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
   private async logout(@Ctx() ctx: ApiContext): Promise<boolean> {
-    await AdminWhiteListJwt.createQueryBuilder().delete().where("admin_id=id", { id: ctx.user.id }).execute();
+    try {
+      const jid = verify(ctx.req.cookies.jid, process.env.REFRESH_TOKEN_SECRET) as Record<string, string>;
+      await AdminWhiteListJwt.createQueryBuilder().delete().where("id=:id", { id: jid.id }).execute();
+    } catch {
+      throw new Error("Something Wrong!");
+    }
     return true;
   }
 }

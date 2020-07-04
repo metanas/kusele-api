@@ -48,6 +48,10 @@ export class Admin extends BaseEntity {
   @Column({ type: "timestamp", nullable: true })
   public reset_password_send_at: Date;
 
+  @Column({ nullable: true })
+  @Field()
+  public avatar: string;
+
   @ManyToOne(() => AdminGroup, (group: AdminGroup) => group.admin, { nullable: true })
   @Field(() => AdminGroup)
   @JoinColumn()

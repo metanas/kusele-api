@@ -265,14 +265,19 @@ describe("Test Admin Resolver", () => {
     const adminGroup = await createAdminGroupHelper();
     admin = await createAdminHelper(adminGroup);
 
-    const username = faker.name.firstName();
+    const form = {
+      id: admin.id,
+      username: faker.name.firstName(),
+      password: faker.random.alphaNumeric(10),
+    };
 
-    const createAdminMutation = `mutation {
-      createAdmin(id: "${admin.id}", password: "${faker.random.alphaNumeric(10)}", username: "${username}")
+    const createAdminMutation = `mutation createAdmin($id: String, $password: String, $username: String, $avatar: Upload) {
+      createAdmin(id: $id, password: $password, username: $username, avatar: $avatar)
     }`;
 
     let response = await graphqlCall({
       source: createAdminMutation,
+      value: form,
       isAdmin: true,
     });
 
@@ -302,7 +307,7 @@ describe("Test Admin Resolver", () => {
       data: {
         getAdmin: {
           email: admin.email,
-          username: username,
+          username: form.username,
           state: StateEnum.Enabled,
           group: {
             name: adminGroup.name,

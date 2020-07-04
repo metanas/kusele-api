@@ -5,12 +5,15 @@ import { redis } from "../utils/redis";
 import { createAccessToken, createRefreshToken } from "../utils/Authorization";
 import { AdminWhiteListJwt } from "../entity/AdminWhiteListJwt";
 import { toSafeInteger } from "lodash";
+import { graphqlUploadExpress } from "graphql-upload";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function InitService() {
   const app = Express();
 
   app.use(cookieParser());
+
+  app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
 
   app.post("/refresh_token", async (req: Request, res: Response) => {
     const token = req.cookies.jid;

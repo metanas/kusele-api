@@ -2,9 +2,11 @@ import { graphql, GraphQLSchema } from "graphql";
 import { createSchema } from "./createSchema";
 import { ExecutionResult } from "graphql/execution/execute";
 import { Admin } from "../../src/entity/Admin";
+import { Maybe } from "type-graphql";
 
 interface Options {
   source: string;
+  value?: Maybe<{ [key: string]: unknown }>;
   isAdmin?: boolean;
   token?: string;
   admin?: Admin;
@@ -12,7 +14,7 @@ interface Options {
 
 let schema: GraphQLSchema;
 
-export const graphqlCall = async ({ source, isAdmin, token, admin }: Options): Promise<ExecutionResult> => {
+export const graphqlCall = async ({ source, value, isAdmin, token, admin }: Options): Promise<ExecutionResult> => {
   if (!schema) {
     schema = await createSchema(isAdmin);
   }
@@ -20,6 +22,7 @@ export const graphqlCall = async ({ source, isAdmin, token, admin }: Options): P
   return graphql({
     schema,
     source,
+    variableValues: value || undefined,
     contextValue: {
       req: {
         headers: {

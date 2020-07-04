@@ -3,7 +3,7 @@ import { Admin } from "../../entity/Admin";
 import { PaginatedAdminResponse, PaginatedAdminResponseType } from "../../@types/PaginatedResponseTypes";
 import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
 import { ElasticService } from "../../utils/ElasticService";
-import { ceil } from "lodash";
+import { ceil, set } from "lodash";
 import { Inject } from "typedi";
 import { AdminArgs } from "../../modules/Args/AdminArgs";
 import { ElasticServiceTesting } from "../../../test/test-utils/ElasticService";
@@ -18,11 +18,19 @@ import { LoginResponse } from "../../@types/LoginResponse";
 import { AdminWhiteListJwt } from "../../entity/AdminWhiteListJwt";
 import { createAccessToken, createRefreshToken } from "../../utils/Authorization";
 import { redis } from "../../utils/redis";
+import { FileUpload, GraphQLUpload } from "graphql-upload";
+import { AwsS3 } from "../../utils/AwsS3";
+import { v1 } from "uuid";
+import { ManagedUpload } from "aws-sdk/clients/s3";
+import { S3Mock } from "../../../test/test-utils/S3Mock";
 
 @Resolver()
 export class AdminResolver {
   @Inject("elasticSearch")
   elasticService: ElasticService | ElasticServiceTesting;
+
+  @Inject("S3")
+  AWSS3: AwsS3 | S3Mock;
 
   @UseMiddleware(isAdmin)
   @Query(() => Admin)
@@ -159,7 +167,19 @@ export class AdminResolver {
   }
 
   @Mutation(() => Boolean)
-  private async createAdmin(@Arg("id") id: string, @Args() { password, username }: AdminArgs): Promise<boolean> {
+  private async createAdmin(
+    @Arg("id") id: string,
+    @Args() { password, username }: AdminArgs,
+    @Arg("avatar", () => GraphQLUpload, { nullable: true }) file?: FileUpload,
+  ): Promise<boolean> {
+    let image: ManagedUpload.SendData = null;
+    if (file?.filename) {
+      image = await this.AWSS3.S3.upload({
+        Key: `kusele-${v1()}`,
+        Body: file.createReadStream(),
+        Bucket: "kusele-storage",
+      }).promise();
+    }
     const { body } = await this.elasticService.client.getSource({
       index: "admin",
       id,
@@ -171,26 +191,24 @@ export class AdminResolver {
 
     const encryptedPassword = await hash(password, 12);
 
-    await Admin.createQueryBuilder()
-      .update()
-      .set({
-        password: encryptedPassword,
-        username,
-        state: StateEnum.Enabled,
-      })
-      .where("id=:id", { id })
-      .execute();
+    const data = {
+      password: encryptedPassword,
+      username,
+      state: StateEnum.Enabled,
+    };
+
+    if (image) {
+      set(data, "avatar", image.Location);
+    }
+
+    await Admin.createQueryBuilder().update().set(data).where("id=:id", { id }).execute();
 
     await this.elasticService.client.update({
       index: "admin",
       id,
       refresh: "true",
       body: {
-        doc: {
-          username,
-          password: encryptedPassword,
-          state: StateEnum.Enabled,
-        },
+        doc: data,
       },
     });
 

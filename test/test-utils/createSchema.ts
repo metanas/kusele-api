@@ -4,8 +4,10 @@ import { GraphQLSchema } from "graphql";
 import { Container } from "typedi";
 import { ElasticServiceTesting } from "./ElasticService";
 import { Roles } from "../../middleware/Roles";
+import { S3Mock } from "./S3Mock";
 
 Container.set("elasticSearch", new ElasticServiceTesting());
+Container.set("S3", S3Mock);
 
 export const createSchema = (isAdmin = false): Promise<GraphQLSchema> => {
   return buildSchema({

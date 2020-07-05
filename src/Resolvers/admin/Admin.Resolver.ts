@@ -14,7 +14,6 @@ import { ApiContext } from "../../@types/ApiContext";
 import { verify } from "jsonwebtoken";
 import { isAdmin } from "../../../middleware/isAdmin";
 import { randomBytes } from "crypto";
-import { LoginResponse } from "../../@types/LoginResponse";
 import { AdminWhiteListJwt } from "../../entity/AdminWhiteListJwt";
 import { createAccessToken, createRefreshToken } from "../../utils/Authorization";
 import { redis } from "../../utils/redis";
@@ -249,12 +248,12 @@ export class AdminResolver {
     return admin;
   }
 
-  @Mutation(() => LoginResponse)
+  @Mutation(() => Admin)
   private async login(
     @Ctx() ctx: ApiContext,
     @Arg("username") username: string,
     @Arg("password") password: string,
-  ): Promise<LoginResponse> {
+  ): Promise<Admin> {
     const admin = await Admin.createQueryBuilder("admin")
       .select()
       .innerJoinAndSelect("admin.group", "group")
@@ -280,16 +279,13 @@ export class AdminResolver {
       admin,
     }).save();
 
-    ctx.res.cookie("jid", createRefreshToken({ id: jit.id, version: jit.version }));
+    ctx.res.set("Access-Control-Expose-Headers", ["x-refresh-token", "x-token"]);
+    ctx.res.set("x-refresh-token", createRefreshToken({ id: jit.id, version: jit.version }));
+    ctx.res.set("x-token", createAccessToken({ id: admin.id }));
 
     await redis.set(jit.id, JSON.stringify({ ...admin, version: jit.version }));
 
-    const token = createAccessToken({ id: admin.id });
-
-    return {
-      token,
-      admin,
-    };
+    return admin;
   }
 
   @Authorized("ADMIN")

@@ -32,6 +32,7 @@ export const graphqlCall = async ({ source, value, isAdmin, token, admin }: Opti
       res: {
         setHeader: jest.fn(),
         cookie: jest.fn(),
+        set: jest.fn(),
       },
       user: admin,
     },

@@ -19,7 +19,7 @@ export function InitService() {
     const token = req.cookies.jid;
 
     if (!token) {
-      return res.send({ status: Error("Not Authenticated") });
+      return res.status(304).send({ success: false, message: Error("Not Authenticated") });
     }
 
     let payload: Record<string, string>;

@@ -6,6 +6,7 @@ import { createAccessToken, createRefreshToken } from "../utils/Authorization";
 import { AdminWhiteListJwt } from "../entity/AdminWhiteListJwt";
 import { toSafeInteger } from "lodash";
 import { graphqlUploadExpress } from "graphql-upload";
+import cors from "cors";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function InitService() {
@@ -13,26 +14,37 @@ export function InitService() {
 
   app.use(cookieParser());
 
+  app.use(
+    cors({
+      origin: "http://localhost:8080",
+      credentials: true,
+    }),
+  );
+
   app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
+
+  app.get("/test", async (req: Request, res: Response) => {
+    return res.status(200).json({ test: "test" });
+  });
 
   app.post("/refresh_token", async (req: Request, res: Response) => {
     const token = req.cookies.jid;
-
+    console.log(req.cookies);
     if (!token) {
-      return res.status(304).send({ success: false, message: Error("Not Authenticated") });
+      return res.status(403).json({ ok: false, message: "Not Authenticated" });
     }
 
     let payload: Record<string, string>;
     try {
       payload = verify(token, process.env.REFRESH_TOKEN_SECRET) as Record<string, string>;
     } catch {
-      return res.send({ status: Error("Not Authenticated") });
+      return res.status(403).send({ ok: false, message: "Not Authenticated" });
     }
 
-    const admin = JSON.parse(await redis.get(payload.userId));
+    const admin = JSON.parse(await redis.get(payload.id));
 
     if (!admin && admin.version !== payload.version) {
-      return res.send({ status: Error("Not Authenticated") });
+      return res.send({ ok: false, message: "Not Authenticated" });
     }
 
     res.cookie("jid", createRefreshToken({ id: payload.id, version: toSafeInteger(payload.version) + 1 }));
@@ -42,14 +54,15 @@ export function InitService() {
       .set({
         version: toSafeInteger(payload.version) + 1,
       })
+      .where("id=:id", { id: payload.id })
       .returning(["version"])
       .execute();
 
-    admin.version = jit.raw.version;
+    admin.version = jit.raw[0].version;
 
     await redis.set(payload.id, JSON.stringify({ ...admin }));
 
-    return res.send({ status: true, token: createAccessToken(admin) });
+    return res.status(200).send({ token: createAccessToken(admin) });
   });
 
   return app;

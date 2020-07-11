@@ -44,10 +44,11 @@ export class AdminResolver {
   @UseMiddleware(isAdmin)
   @Authorized("ADMIN")
   @Query(() => Admin)
-  public async getAdmin(@Arg("id") id: string): Promise<Admin> {
+  public async getAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<Admin> {
     const admin = await Admin.findOne({ where: { id }, relations: ["group"] });
 
     if (!admin) {
+      ctx.res.status(404);
       throw new Error("Admin not found!");
     }
 
@@ -99,7 +100,7 @@ export class AdminResolver {
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Admin, { nullable: true })
-  private async addAdmin(@Arg("email") email: string): Promise<Admin> {
+  private async addAdmin(@Ctx() ctx: ApiContext, @Arg("email") email: string): Promise<Admin> {
     const admin = await Admin.create({
       email,
     }).save();
@@ -110,15 +111,15 @@ export class AdminResolver {
       body: admin,
     });
 
-    await this.resendEmail(admin.id);
+    await this.resendEmail(ctx, admin.id);
 
     return admin;
   }
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
-  private async resetPassword(@Arg("id") id: string): Promise<boolean> {
-    let admin = await this.getAdmin(id);
+  private async resetPassword(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
+    let admin = await this.getAdmin(ctx, id);
 
     admin.reset_password_token = randomBytes(48).toString("hex");
 
@@ -141,7 +142,7 @@ export class AdminResolver {
 
     await mailer.send(admin.email, "admin-invite", {
       email: admin.email,
-      link: `http://localhost:3000/admin/${admin.reset_password_token}/reset_token`,
+      link: `http://localhost:8080/admin_ks/admin/${admin.reset_password_token}/reset_token`,
     });
 
     return true;
@@ -149,8 +150,8 @@ export class AdminResolver {
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
-  private async resendEmail(@Arg("id") id: string): Promise<boolean> {
-    const admin = await this.getAdmin(id);
+  private async resendEmail(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
+    const admin = await this.getAdmin(ctx, id);
     if (admin.state !== StateEnum.New) {
       throw new ForbiddenError();
     }
@@ -159,7 +160,7 @@ export class AdminResolver {
 
     await mailer.send(admin.email, "admin-invite", {
       email: admin.email,
-      link: `http://localhost:3000/admin/${id}/create`,
+      link: `http://localhost:8080/admin_ks/admins/${id}/create`,
     });
 
     return true;
@@ -167,6 +168,7 @@ export class AdminResolver {
 
   @Mutation(() => Boolean)
   private async createAdmin(
+    @Ctx() { res }: ApiContext,
     @Arg("id") id: string,
     @Args() { password, username }: AdminArgs,
     @Arg("avatar", () => GraphQLUpload, { nullable: true }) file?: FileUpload,
@@ -185,6 +187,7 @@ export class AdminResolver {
     });
 
     if (body.state !== StateEnum.New) {
+      res.status(403);
       throw new ForbiddenError();
     }
 
@@ -221,7 +224,7 @@ export class AdminResolver {
       throw new ForbiddenError();
     }
 
-    const admin = await this.getAdmin(id);
+    const admin = await this.getAdmin(ctx, id);
 
     const state = admin.state === StateEnum.Enabled ? StateEnum.Disabled : StateEnum.Enabled;
 
@@ -288,23 +291,24 @@ export class AdminResolver {
     return admin;
   }
 
-  @Authorized("ADMIN")
   @UseMiddleware(isAdmin)
+  @Authorized("ADMIN")
   @Mutation(() => Boolean)
   private async deleteAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
-    const admin = await this.getAdmin(id);
+    const admin = await this.getAdmin(ctx, id);
 
     if (admin.state !== StateEnum.New) {
       throw new Error("You can delete enable/disable admin");
     }
-
-    await Admin.createQueryBuilder().delete().where("id=:id", { id }).execute();
 
     await this.elasticService.client.delete({
       index: "admin",
       id,
       refresh: "true",
     });
+
+    await Admin.createQueryBuilder().delete().where("id=:id", { id }).execute();
+
     return true;
   }
 

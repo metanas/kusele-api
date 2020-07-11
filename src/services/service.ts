@@ -23,13 +23,9 @@ export function InitService() {
 
   app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
 
-  app.get("/test", async (req: Request, res: Response) => {
-    return res.status(200).json({ test: "test" });
-  });
-
   app.post("/refresh_token", async (req: Request, res: Response) => {
     const token = req.cookies.jid;
-    console.log(req.cookies);
+
     if (!token) {
       return res.status(403).json({ ok: false, message: "Not Authenticated" });
     }
@@ -49,7 +45,7 @@ export function InitService() {
 
     res.cookie("jid", createRefreshToken({ id: payload.id, version: toSafeInteger(payload.version) + 1 }));
 
-    const jit = await AdminWhiteListJwt.createQueryBuilder()
+    await AdminWhiteListJwt.createQueryBuilder()
       .update()
       .set({
         version: toSafeInteger(payload.version) + 1,
@@ -58,7 +54,7 @@ export function InitService() {
       .returning(["version"])
       .execute();
 
-    admin.version = jit.raw[0].version;
+    admin.version = toSafeInteger(payload.version) + 1;
 
     await redis.set(payload.id, JSON.stringify({ ...admin }));
 

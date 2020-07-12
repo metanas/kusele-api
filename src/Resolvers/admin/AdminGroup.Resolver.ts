@@ -7,9 +7,17 @@ import { FindManyOptions, Like } from "typeorm";
 import { isAdmin } from "../../../middleware/isAdmin";
 import { AdminGroupArgs } from "../../modules/Args/adminGroupArgs";
 import { Admin } from "../../entity/Admin";
+import { PermissionType } from "../../modules/PermissionType";
+import Permissions from "../../utils/Permissions";
 
 @Resolver()
 export class AdminResolver {
+  @UseMiddleware(isAdmin)
+  @Query(() => PermissionType)
+  private async getPermissions(): Promise<PermissionType> {
+    return Permissions;
+  }
+
   @UseMiddleware(isAdmin)
   @Query(() => AdminGroup)
   public async getAdminGroup(@Arg("id") id: string): Promise<AdminGroup> {

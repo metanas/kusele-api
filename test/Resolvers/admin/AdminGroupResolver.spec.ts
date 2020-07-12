@@ -7,6 +7,7 @@ import { Admin } from "../../../src/entity/Admin";
 import { graphqlCall } from "../../test-utils/graphqlCall";
 import * as faker from "faker";
 import { truncate } from "../../helpers/truncateTables";
+import Permissions from "../../../src/utils/Permissions";
 
 describe("Test AdminGroup Resolver", () => {
   let conn: Connection;
@@ -256,6 +257,32 @@ describe("Test AdminGroup Resolver", () => {
         last_page: 1,
         total_count: 1,
       },
+    });
+
+    done();
+  });
+
+  it("Test get permissions", async (done) => {
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup);
+
+    const token = await loginHelper(admin);
+
+    const getPermissionQuery = `{ getPermissions {
+        access
+        modify
+      }
+    }`;
+
+    const response = await graphqlCall({
+      source: getPermissionQuery,
+      isAdmin: true,
+      token,
+      admin,
+    });
+
+    expect(response.data).toMatchObject({
+      getPermissions: Permissions,
     });
 
     done();

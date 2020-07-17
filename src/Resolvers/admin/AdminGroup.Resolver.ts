@@ -29,10 +29,10 @@ export class AdminResolver {
   public async getAdminGroups(
     @Args() { name, limit, page }: PaginatedRequestArgs,
   ): Promise<PaginatedAdminGroupResponseType> {
-    const options: FindManyOptions = { skip: (page - 1) * limit, take: limit };
+    const options: FindManyOptions = { skip: (page - 1) * limit, take: limit, order: { id: "ASC" } };
 
     if (name) {
-      set(options, "where.name", Like(name));
+      set(options, "where.name", Like(`${name}%`));
     }
 
     const result = await AdminGroup.findAndCount(options);
@@ -59,7 +59,7 @@ export class AdminResolver {
   @UseMiddleware(isAdmin)
   @Mutation(() => AdminGroup)
   private async updateAdminGroup(
-    @Arg("id") id: string,
+    @Arg("id", { nullable: false }) id: string,
     @Args() { name, access, modify }: AdminGroupArgs,
   ): Promise<AdminGroup> {
     await AdminGroup.createQueryBuilder()

@@ -22,6 +22,7 @@ import { AwsS3 } from "../../utils/AwsS3";
 import { v1 } from "uuid";
 import { ManagedUpload } from "aws-sdk/clients/s3";
 import { S3Mock } from "../../../test/test-utils/S3Mock";
+import { AdminGroup } from "../../entity/AdminGroup";
 
 @Resolver()
 export class AdminResolver {
@@ -100,11 +101,23 @@ export class AdminResolver {
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Admin, { nullable: true })
-  private async addAdmin(@Ctx() ctx: ApiContext, @Arg("email") email: string): Promise<Admin> {
+  private async addAdmin(
+    @Ctx() ctx: ApiContext,
+    @Arg("email") email: string,
+    @Arg("group_id") groupId: string,
+  ): Promise<Admin> {
+    const group = await AdminGroup.findOne({ where: { id: groupId } });
+
+    if (!group) {
+      ctx.res.status(401);
+      throw new Error("Admin group not found");
+    }
+
     const admin = await Admin.create({
       email,
+      group,
     }).save();
-
+    console.log(admin);
     await this.elasticService.client.index({
       index: "admin",
       id: admin.id,
@@ -170,7 +183,8 @@ export class AdminResolver {
   private async createAdmin(
     @Ctx() { res }: ApiContext,
     @Arg("id") id: string,
-    @Args() { password, username }: AdminArgs,
+    @Arg("password") password: string,
+    @Arg("username") username: string,
     @Arg("avatar", () => GraphQLUpload, { nullable: true }) file?: FileUpload,
   ): Promise<boolean> {
     let image: ManagedUpload.SendData = null;
@@ -221,6 +235,7 @@ export class AdminResolver {
   @Mutation(() => Admin)
   private async adminToggleState(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<Admin> {
     if (ctx.user.id === id) {
+      ctx.res.status(403);
       throw new ForbiddenError();
     }
 
@@ -265,16 +280,19 @@ export class AdminResolver {
       .getOne();
 
     if (!admin) {
+      ctx.res.status(404);
       throw new Error("Admin not found!");
     }
 
     const isCorrect = await compare(password, admin.password);
 
     if (!isCorrect) {
+      ctx.res.status(401);
       throw new Error("Invalid password!");
     }
 
     if (admin.state !== StateEnum.Enabled) {
+      ctx.res.status(403);
       throw new Error("Your account is inactive, please contact support for more information!");
     }
 

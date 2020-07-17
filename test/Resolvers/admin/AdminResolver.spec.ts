@@ -234,7 +234,7 @@ describe("Test Admin Resolver", () => {
 
     const email = faker.internet.email();
     const addAdminMutation = `mutation {
-      addAdmin(email: "${email}") {
+      addAdmin(email: "${email}", group_id: "${adminGroup.id}") {
         username
         state
         email

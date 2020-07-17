@@ -39,8 +39,8 @@ export function InitService() {
 
     const admin = JSON.parse(await redis.get(payload.id));
 
-    if (!admin && admin.version !== payload.version) {
-      return res.send({ ok: false, message: "Not Authenticated" });
+    if (!admin && admin?.version !== payload.version) {
+      return res.status(403).send({ ok: false, message: "Not Authenticated" });
     }
 
     res.cookie("jid", createRefreshToken({ id: payload.id, version: toSafeInteger(payload.version) + 1 }));

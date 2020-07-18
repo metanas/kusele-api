@@ -5,7 +5,6 @@ import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
 import { ElasticService } from "../../utils/ElasticService";
 import { ceil, set } from "lodash";
 import { Inject } from "typedi";
-import { AdminArgs } from "../../modules/Args/AdminArgs";
 import { ElasticServiceTesting } from "../../../test/test-utils/ElasticService";
 import { Mailer } from "../../utils/Mailer";
 import { StateEnum } from "../../@types/StateEnum";
@@ -104,7 +103,7 @@ export class AdminResolver {
   private async addAdmin(
     @Ctx() ctx: ApiContext,
     @Arg("email") email: string,
-    @Arg("group_id") groupId: string,
+    @Arg("group_id", { nullable: false }) groupId: number,
   ): Promise<Admin> {
     const group = await AdminGroup.findOne({ where: { id: groupId } });
 
@@ -117,7 +116,7 @@ export class AdminResolver {
       email,
       group,
     }).save();
-    console.log(admin);
+
     await this.elasticService.client.index({
       index: "admin",
       id: admin.id,

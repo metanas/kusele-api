@@ -7,12 +7,15 @@ import { AdminWhiteListJwt } from "../entity/AdminWhiteListJwt";
 import { toSafeInteger } from "lodash";
 import { graphqlUploadExpress } from "graphql-upload";
 import cors from "cors";
+import monitor from "express-status-monitor";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function InitService() {
   const app = Express();
 
   app.use(cookieParser());
+
+  app.use(monitor());
 
   app.use(
     cors({

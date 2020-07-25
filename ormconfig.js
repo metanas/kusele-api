@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const KuseleLogger = require("./middleware/KuseleLogger").default;
+
 module.exports = {
   type: "postgres",
   host: "localhost",
@@ -7,7 +10,7 @@ module.exports = {
   database: process.env.DB_DATABASE,
   synchronize: process.env.NODE_ENV !== "production",
   logging: process.env.NODE_ENV !== "production" ? ["error"] : false,
-  logger: "file",
+  logger: new KuseleLogger(),
   entities: ["src/entity/**/*.ts"],
   migrations: ["src/migration/**/*.ts"],
   subscribers: ["src/subscriber/**/*.ts"],

@@ -22,6 +22,7 @@ export const createApolloAdminService = async (): Promise<ApolloServer> => {
 
   return new ApolloServer({
     schema,
+    uploads: { maxFileSize: 10000000, maxFiles: 10 },
     context: async ({ req, res }: ApiContext) => {
       const ctx = { req, res };
       const token = last(req.headers?.authorization?.split(" "));

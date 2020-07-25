@@ -2,10 +2,11 @@ import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "t
 import { Field, ObjectType } from "type-graphql";
 import { PermissionType } from "../modules/PermissionType";
 import { Admin } from "./Admin";
+import { AdminBase } from "./AdminBase";
 
 @Entity()
 @ObjectType()
-export class AdminGroup extends BaseEntity {
+export class AdminGroup extends AdminBase {
   @Field()
   @PrimaryGeneratedColumn()
   public id: number;

@@ -1,4 +1,4 @@
-import { Arg, Args, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
+import { Arg, Args, Ctx, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
 import { PaginatedAdminGroupResponse, PaginatedAdminGroupResponseType } from "../../@types/PaginatedResponseTypes";
 import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
 import { ceil, set } from "lodash";
@@ -9,6 +9,7 @@ import { AdminGroupArgs } from "../../modules/Args/adminGroupArgs";
 import { Admin } from "../../entity/Admin";
 import { PermissionType } from "../../modules/PermissionType";
 import Permissions from "../../utils/Permissions";
+import { ApiContext } from "../../@types/ApiContext";
 
 @Resolver()
 export class AdminResolver {
@@ -59,6 +60,7 @@ export class AdminResolver {
   @UseMiddleware(isAdmin)
   @Mutation(() => AdminGroup)
   private async updateAdminGroup(
+    @Ctx() ctx: ApiContext,
     @Arg("id", { nullable: false }) id: string,
     @Args() { name, access, modify }: AdminGroupArgs,
   ): Promise<AdminGroup> {
@@ -70,6 +72,7 @@ export class AdminResolver {
           access,
           modify,
         },
+        updated_by: ctx.user,
       })
       .where("id=:id", { id })
       .execute();

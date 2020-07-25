@@ -63,7 +63,7 @@ export class AdminResolver {
   ): Promise<PaginatedAdminResponseType> {
     let params = {};
 
-    let sorted = "create_at:desc";
+    let sorted = "created_at:desc";
 
     if (name || email) {
       params = {
@@ -114,6 +114,7 @@ export class AdminResolver {
 
     const admin = await Admin.create({
       email,
+      created_by: ctx.user,
       group,
     }).save();
 
@@ -136,6 +137,8 @@ export class AdminResolver {
     admin.reset_password_token = randomBytes(48).toString("hex");
 
     admin.reset_password_send_at = new Date();
+
+    admin.updated_by = ctx.user;
 
     admin = await admin.save();
 
@@ -186,6 +189,7 @@ export class AdminResolver {
     @Arg("username") username: string,
     @Arg("avatar", () => GraphQLUpload, { nullable: true }) file?: FileUpload,
   ): Promise<boolean> {
+    console.log(file);
     let image: ManagedUpload.SendData = null;
     if (file?.filename) {
       image = await this.AWSS3.S3.upload({

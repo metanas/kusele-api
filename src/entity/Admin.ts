@@ -1,20 +1,12 @@
-import {
-  BaseEntity,
-  Column,
-  Entity,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  UpdateDateColumn,
-  CreateDateColumn,
-  JoinColumn,
-} from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Field, ID, ObjectType } from "type-graphql";
 import { StateEnum } from "../@types/StateEnum";
 import { AdminGroup } from "./AdminGroup";
+import { AdminBase } from "./AdminBase";
 
 @ObjectType()
 @Entity()
-export class Admin extends BaseEntity {
+export class Admin extends AdminBase {
   @Field(() => ID)
   @PrimaryGeneratedColumn("uuid")
   public id: string;
@@ -29,14 +21,6 @@ export class Admin extends BaseEntity {
 
   @Column({ nullable: true })
   public password: string;
-
-  @Field()
-  @CreateDateColumn()
-  public create_at: string;
-
-  @Field()
-  @UpdateDateColumn({ nullable: true })
-  public update_at: string;
 
   @Field(() => StateEnum)
   @Column("text", { default: StateEnum.New })

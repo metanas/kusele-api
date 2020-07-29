@@ -7,15 +7,13 @@ import { FindManyOptions, Like } from "typeorm";
 import { isAdmin } from "../../../middleware/isAdmin";
 import { AdminGroupArgs } from "../../modules/Args/adminGroupArgs";
 import { Admin } from "../../entity/Admin";
-import { PermissionType } from "../../modules/PermissionType";
-import Permissions from "../../utils/Permissions";
+import Permissions from "../../utils/permissions.json";
 import { ApiContext } from "../../@types/ApiContext";
 
 @Resolver()
-export class AdminResolver {
-  @UseMiddleware(isAdmin)
-  @Query(() => PermissionType)
-  private async getPermissions(): Promise<PermissionType> {
+export class AdminGroupResolver {
+  @Query(() => [String])
+  private async getPermissions(): Promise<string[]> {
     return Permissions;
   }
 
@@ -47,13 +45,10 @@ export class AdminResolver {
 
   @UseMiddleware(isAdmin)
   @Mutation(() => AdminGroup)
-  public async addAdminGroup(@Args() { name, access, modify }: AdminGroupArgs): Promise<AdminGroup> {
+  public async addAdminGroup(@Args() { name, permissions }: AdminGroupArgs): Promise<AdminGroup> {
     return await AdminGroup.create({
       name,
-      permissions: {
-        access,
-        modify,
-      },
+      permissions,
     }).save();
   }
 
@@ -62,16 +57,13 @@ export class AdminResolver {
   private async updateAdminGroup(
     @Ctx() ctx: ApiContext,
     @Arg("id", { nullable: false }) id: string,
-    @Args() { name, access, modify }: AdminGroupArgs,
+    @Args() { name, permissions }: AdminGroupArgs,
   ): Promise<AdminGroup> {
     await AdminGroup.createQueryBuilder()
       .update()
       .set({
         name,
-        permissions: {
-          access,
-          modify,
-        },
+        permissions,
         updated_by: ctx.user,
       })
       .where("id=:id", { id })

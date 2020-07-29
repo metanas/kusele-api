@@ -8,6 +8,7 @@
       "noImplicitAny": true,
       "strictFunctionTypes": true,
       "rootDir": ".",
+      "resolveJsonModule": true,
       "baseUrl": ".",
       "allowSyntheticDefaultImports": true,
       "emitDecoratorMetadata": true,

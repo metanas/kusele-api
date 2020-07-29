@@ -6,8 +6,5 @@ export class AdminGroupArgs {
   public name: string;
 
   @Field(() => [String], { nullable: false })
-  public access: string[];
-
-  @Field(() => [String], { nullable: false })
-  public modify: string[];
+  public permissions: string[];
 }

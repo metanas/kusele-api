@@ -47,7 +47,9 @@ jobs:
       - run:
           name: start lint
           command: yarn lint
-
+      - run:
+          name: Generate Permissions
+          command: yarn generate_permissions
       - run:
           name: unit Testing
           command: yarn test

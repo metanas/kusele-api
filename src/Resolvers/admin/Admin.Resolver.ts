@@ -42,7 +42,7 @@ export class AdminResolver {
   }
 
   @UseMiddleware(isAdmin)
-  @Authorized("ADMIN")
+  @Authorized("Admin/getAdmin")
   @Query(() => Admin)
   public async getAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<Admin> {
     const admin = await Admin.findOne({ where: { id }, relations: ["group"] });
@@ -189,7 +189,6 @@ export class AdminResolver {
     @Arg("username") username: string,
     @Arg("avatar", () => GraphQLUpload, { nullable: true }) file?: FileUpload,
   ): Promise<boolean> {
-    console.log(file);
     let image: ManagedUpload.SendData = null;
     if (file?.filename) {
       image = await this.AWSS3.S3.upload({
@@ -283,7 +282,6 @@ export class AdminResolver {
       .getOne();
 
     if (!admin) {
-      ctx.res.status(404);
       throw new Error("Admin not found!");
     }
 
@@ -313,7 +311,7 @@ export class AdminResolver {
   }
 
   @UseMiddleware(isAdmin)
-  @Authorized("ADMIN")
+  @Authorized("Admin/deleteAdmin")
   @Mutation(() => Boolean)
   private async deleteAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
     const admin = await this.getAdmin(ctx, id);

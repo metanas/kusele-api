@@ -4,7 +4,7 @@ import { AdminGroup } from "../entity/AdminGroup";
 import { StateEnum } from "../@types/StateEnum";
 import { ElasticService } from "../utils/ElasticService";
 import { hash } from "bcryptjs";
-import Permissions from "../utils/Permissions";
+import permissions from "../utils/permissions.json";
 
 export class setupAdmin1592169347318 implements MigrationInterface {
   client = new ElasticService().client;
@@ -12,10 +12,7 @@ export class setupAdmin1592169347318 implements MigrationInterface {
   public async up(): Promise<void> {
     const group = await AdminGroup.create({
       name: "administrator",
-      permissions: {
-        access: Permissions.access,
-        modify: Permissions.modify,
-      },
+      permissions,
     }).save();
     const admin = await Admin.create({
       email: "admin@kusele.com",

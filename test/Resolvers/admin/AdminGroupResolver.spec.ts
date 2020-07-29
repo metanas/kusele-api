@@ -7,7 +7,7 @@ import { Admin } from "../../../src/entity/Admin";
 import { graphqlCall } from "../../test-utils/graphqlCall";
 import * as faker from "faker";
 import { truncate } from "../../helpers/truncateTables";
-import Permissions from "../../../src/utils/Permissions";
+import Permissions from "../../../src/utils/permissions.json";
 
 describe("Test AdminGroup Resolver", () => {
   let conn: Connection;
@@ -33,26 +33,18 @@ describe("Test AdminGroup Resolver", () => {
   });
 
   it("Test create new admin group", async (done) => {
-    const modify = [];
-    const access = [];
+    const permissions = [];
 
     for (let i = 0; i < faker.random.number(20); i++) {
-      access.push(faker.name.jobType());
-    }
-
-    for (let i = 0; i < faker.random.number(20); i++) {
-      modify.push(faker.name.jobType());
+      permissions.push(faker.name.jobType());
     }
 
     const name = faker.name.jobTitle();
 
-    const addAdminGroupMutation = `mutation {
-      addAdminGroup(name: "${name}", access: ${JSON.stringify(access)}, modify: ${JSON.stringify(modify)}) {
+    const addAdminGroupMutation = `mutation addAdminGroup($name: String!, $permissions: [String!]!) {
+      addAdminGroup(name: $name, permissions: $permissions) {
         name
-        permissions {
-          access
-          modify
-        }
+        permissions
       } 
     }`;
 
@@ -61,15 +53,16 @@ describe("Test AdminGroup Resolver", () => {
       isAdmin: true,
       admin,
       token,
+      value: {
+        name,
+        permissions,
+      },
     });
 
     expect(response.data).toMatchObject({
       addAdminGroup: {
         name,
-        permissions: {
-          access,
-          modify,
-        },
+        permissions,
       },
     });
 
@@ -81,26 +74,16 @@ describe("Test AdminGroup Resolver", () => {
 
     const name = faker.name.jobTitle();
 
-    const modify = [];
-    const access = [];
+    const permissions = [];
 
     for (let i = 0; i < faker.random.number(20); i++) {
-      access.push(faker.name.jobType());
+      permissions.push(faker.name.jobType());
     }
 
-    for (let i = 0; i < faker.random.number(20); i++) {
-      modify.push(faker.name.jobType());
-    }
-
-    const updateAdminGroupMutation = `mutation {
-      updateAdminGroup(id: "${adminGroup.id}", name: "${name}", access: ${JSON.stringify(
-      access,
-    )}, modify: ${JSON.stringify(modify)}) {
+    const updateAdminGroupMutation = `mutation updateAdminGroup($id: String!, $name: String!, $permissions: [String!]!) {
+      updateAdminGroup(id: $id, name: $name, permissions: $permissions) {
         name
-        permissions {
-          access
-          modify
-        }
+        permissions
       }
     }`;
 
@@ -109,15 +92,17 @@ describe("Test AdminGroup Resolver", () => {
       isAdmin: true,
       token,
       admin,
+      value: {
+        id: adminGroup.id.toString(),
+        name,
+        permissions,
+      },
     });
 
     expect(response.data).toMatchObject({
       updateAdminGroup: {
         name,
-        permissions: {
-          access,
-          modify,
-        },
+        permissions,
       },
     });
 
@@ -170,10 +155,7 @@ describe("Test AdminGroup Resolver", () => {
       getAdminGroup(id: "${admin.group.id}") {
         id
         name
-        permissions {
-          access
-          modify
-        }
+        permissions
       }
     }`;
 
@@ -268,11 +250,7 @@ describe("Test AdminGroup Resolver", () => {
 
     const token = await loginHelper(admin);
 
-    const getPermissionQuery = `{ getPermissions {
-        access
-        modify
-      }
-    }`;
+    const getPermissionQuery = `{ getPermissions }`;
 
     const response = await graphqlCall({
       source: getPermissionQuery,

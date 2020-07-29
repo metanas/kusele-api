@@ -7,4 +7,3 @@ temp/
 .env
 ormlogs.log
 coverage
-src/utils/permissions.json

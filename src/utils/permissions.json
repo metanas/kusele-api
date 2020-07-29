@@ -1,0 +1,18 @@
+[
+  "Admin/getAdmin",
+  "Admin/getAdmins",
+  "Admin/addAdmin",
+  "Admin/resetPassword",
+  "Admin/resendEmail",
+  "Admin/createAdmin",
+  "Admin/adminToggleState",
+  "Admin/deleteAdmin",
+  "AdminGroup/getPermissions",
+  "AdminGroup/getAdminGroup",
+  "AdminGroup/getAdminGroups",
+  "AdminGroup/addAdminGroup",
+  "AdminGroup/updateAdminGroup",
+  "AdminGroup/deleteAdminGroup",
+  "Product/getProducts",
+  "Product/addProduct"
+]

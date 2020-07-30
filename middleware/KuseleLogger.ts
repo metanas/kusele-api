@@ -22,25 +22,29 @@ export default class KuseleLogger implements Logger {
         const createByIndex = data[0].split(",").findIndex((column: string) => column.includes("createdById"));
         if (createByIndex < 0) return;
         const realIndex = data[1].split(",")[createByIndex];
-        const index = realIndex.replace("$", "");
-        const admin = await Admin.findOne(parameters[toSafeInteger(index) - 1]);
-        await HistoryAdminAction.create({
-          type_action: operation[0],
-          table_name: table,
-          data: data.join(" => ") + " params: " + parameters.join(", "),
-          creator: admin,
-        }).save();
+        const index = toSafeInteger(realIndex.replace("$", ""));
+        if (index > 0) {
+          const admin = await Admin.findOne(parameters[index - 1]);
+          await HistoryAdminAction.create({
+            type_action: operation[0],
+            table_name: table,
+            data: data.join(" => ") + " params: " + parameters.join(", "),
+            creator: admin,
+          }).save();
+        }
       } else if (operation[0] === "UPDATE") {
         const data = query.split(" = ");
         const updatedByIndex = data.findIndex((key: string): boolean => key.includes("updatedById"));
-        const index = data[updatedByIndex + 1].match(/\d/g);
-        const admin = await Admin.findOne(parameters[toSafeInteger(index) - 1]);
-        await HistoryAdminAction.create({
-          type_action: operation[0],
-          table_name: table,
-          data: query + " params: " + parameters.join(", "),
-          creator: admin,
-        }).save();
+        const index = toSafeInteger(data[updatedByIndex + 1].match(/\d/g));
+        if (index > 0) {
+          const admin = await Admin.findOne(parameters[index - 1]);
+          await HistoryAdminAction.create({
+            type_action: operation[0],
+            table_name: table,
+            data: query + " params: " + parameters.join(", "),
+            creator: admin,
+          }).save();
+        }
       }
     }
   }

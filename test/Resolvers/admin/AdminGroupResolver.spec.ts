@@ -179,9 +179,11 @@ describe("Test AdminGroup Resolver", () => {
 
   it("Test Get admin groups", async (done) => {
     await truncate(conn, "admin_group", true);
-    const adminGroups = [];
+    const adminGroup = await createAdminGroupHelper();
+    admin = await createAdminHelper(adminGroup);
+    const adminGroups = [{ id: adminGroup.id }];
     let name = "";
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 19; i++) {
       const adminGroup = await createAdminGroupHelper();
       adminGroups.push({ id: adminGroup.id });
       name = adminGroup.name;

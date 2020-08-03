@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { Logger, QueryRunner } from "typeorm";
-import HistoryAdminAction from "../src/entity/HistoryAdminAction";
-import {Admin} from "../src/entity/Admin";
+import { HistoryAdminAction } from "../src/entity/HistoryAdminAction";
+import { Admin } from "../src/entity/Admin";
 import { toSafeInteger } from "lodash";
 
 export default class KuseleLogger implements Logger {

@@ -56,6 +56,7 @@ export class AdminResolver {
   }
 
   @UseMiddleware(isAdmin)
+  @Authorized("Admin/getAdmins")
   @Query(() => PaginatedAdminResponse)
   public async getAdmins(
     @Arg("email") email: string,
@@ -99,6 +100,7 @@ export class AdminResolver {
   }
 
   @UseMiddleware(isAdmin)
+  @Authorized("Admin/addAdmin")
   @Mutation(() => Admin, { nullable: true })
   private async addAdmin(
     @Ctx() ctx: ApiContext,
@@ -130,6 +132,7 @@ export class AdminResolver {
   }
 
   @UseMiddleware(isAdmin)
+  @Authorized("Admin/resetPassword")
   @Mutation(() => Boolean)
   private async resetPassword(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
     let admin = await this.getAdmin(ctx, id);
@@ -164,6 +167,7 @@ export class AdminResolver {
   }
 
   @UseMiddleware(isAdmin)
+  @Authorized("Admin/resetPassword")
   @Mutation(() => Boolean)
   private async resendEmail(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
     const admin = await this.getAdmin(ctx, id);
@@ -234,6 +238,7 @@ export class AdminResolver {
   }
 
   @UseMiddleware(isAdmin)
+  @Authorized("Admin/adminToggleState")
   @Mutation(() => Admin)
   private async adminToggleState(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<Admin> {
     if (ctx.user.id === id) {

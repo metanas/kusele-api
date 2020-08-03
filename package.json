@@ -68,7 +68,7 @@
       "typescript": "3.9.7"
    },
    "scripts": {
-      "start": "ts-node generatePermissions.ts && ts-node-dev src/index.ts",
+      "start": "ts-node-dev src/index.ts",
       "generate_permissions": "ts-node generatePermissions.ts",
       "lint": "eslint ./src/**/*.ts --fix",
       "db:setup": "ts-node ./test/test-utils/setup.ts",

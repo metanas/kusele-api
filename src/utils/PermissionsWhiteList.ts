@@ -1,1 +1,1 @@
-export default ["login", "logout", "me"];
+export default ["login", "logout", "me", "createAdmin"];

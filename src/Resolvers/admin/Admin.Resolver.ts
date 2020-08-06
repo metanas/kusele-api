@@ -186,12 +186,12 @@ export class AdminResolver {
   }
 
   @Mutation(() => Boolean)
-  private async createAdmin(
+  public async createAdmin(
     @Ctx() { res }: ApiContext,
     @Arg("id") id: string,
     @Arg("password") password: string,
     @Arg("username") username: string,
-    @Arg("avatar", () => GraphQLUpload, { nullable: true }) file?: FileUpload,
+    @Arg("avatar", () => GraphQLUpload) file?: FileUpload,
   ): Promise<boolean> {
     let image: ManagedUpload.SendData = null;
     if (file?.filename) {
@@ -290,7 +290,7 @@ export class AdminResolver {
       throw new Error("Admin not found!");
     }
 
-    const isCorrect = await compare(password, admin.password);
+    const isCorrect = await compare(password, admin.password || "");
 
     if (!isCorrect) {
       ctx.res.status(401);

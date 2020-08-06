@@ -1,11 +1,15 @@
 import { MiddlewareFn } from "type-graphql";
 import { AuthenticationError } from "apollo-server-express";
 import { ApiContext } from "../src/@types/ApiContext";
-import { verify } from "jsonwebtoken";
+import { Admin } from "../src/entity/Admin";
 
 export const isAdmin: MiddlewareFn<ApiContext> = async ({ context }, next): Promise<unknown> => {
   try {
-    verify(context.req.headers?.authorization?.split(" ")[1], process.env.ACCESS_TOKEN_SECRET);
+    await Admin.findOneOrFail({
+      where: {
+        id: context.user.id,
+      },
+    });
   } catch (e) {
     throw new AuthenticationError("Not Authorized");
   }

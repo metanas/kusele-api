@@ -10,7 +10,7 @@ export default class KuseleLogger implements Logger {
   logMigration(message: string, queryRunner?: QueryRunner): any {}
 
   async logQuery(query: string, parameters?: any[], queryRunner?: QueryRunner): Promise<any> {
-    const operation = query.match(/(INSERT|UPDATE)/g);
+    const operation = query?.match(/(INSERT|UPDATE)/g);
     if (operation && operation.length) {
       const found = query.split(" ").findIndex((word: string): boolean => ["UPDATE", "INTO", "FROM"].includes(word.toUpperCase()));
       const tableCatch = query.split(" ")[found + 1];
@@ -33,9 +33,9 @@ export default class KuseleLogger implements Logger {
           }).save();
         }
       } else if (operation[0] === "UPDATE") {
-        const data = query.split(" = ");
+        const data = query?.split(" = ");
         const updatedByIndex = data.findIndex((key: string): boolean => key.includes("updatedById"));
-        const index = toSafeInteger(data[updatedByIndex + 1].match(/\d/g));
+        const index = toSafeInteger(data[updatedByIndex + 1]?.match(/\d/g));
         if (index > 0) {
           const admin = await Admin.findOne(parameters[index - 1]);
           await HistoryAdminAction.create({

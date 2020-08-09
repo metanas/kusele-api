@@ -22,6 +22,7 @@ import { v1 } from "uuid";
 import { ManagedUpload } from "aws-sdk/clients/s3";
 import { S3Mock } from "../../../test/test-utils/S3Mock";
 import { AdminGroup } from "../../entity/AdminGroup";
+import { HistoryAdminAction } from "../../entity/HistoryAdminAction";
 
 @Resolver()
 export class AdminResolver {
@@ -331,7 +332,16 @@ export class AdminResolver {
       refresh: "true",
     });
 
+    const creator = await Admin.findOne({ where: { id: ctx.user.id } });
+
     await Admin.createQueryBuilder().delete().where("id=:id", { id }).execute();
+
+    await HistoryAdminAction.create({
+      creator,
+      table_name: `"admin"`,
+      type_action: "DELETE",
+      data: `DELETE FROM ADMIN WHERE id=${admin.id}`,
+    }).save();
 
     return true;
   }

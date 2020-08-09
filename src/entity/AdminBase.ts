@@ -5,11 +5,11 @@ import { Field, ObjectType } from "type-graphql";
 @ObjectType()
 export abstract class AdminBase extends BaseEntity {
   @Field()
-  @UpdateDateColumn({ nullable: true })
+  @UpdateDateColumn({ type: "timestamp", nullable: true })
   updated_at: string;
 
   @Field()
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamp" })
   created_at: string;
 
   @ManyToOne(() => Admin, { nullable: true })

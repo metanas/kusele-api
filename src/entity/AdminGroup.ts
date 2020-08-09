@@ -11,7 +11,7 @@ export class AdminGroup extends AdminBase {
   public id: number;
 
   @Field()
-  @Column()
+  @Column({ type: "citext" })
   public name: string;
 
   @Field(() => [String])

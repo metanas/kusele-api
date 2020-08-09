@@ -12,11 +12,11 @@ export class Admin extends AdminBase {
   public id: string;
 
   @Field()
-  @Column({ nullable: true })
+  @Column({ type: "citext", nullable: true })
   public username: string;
 
   @Field()
-  @Column({ unique: true })
+  @Column({ type: "citext", unique: true })
   public email: string;
 
   @Column({ nullable: true })

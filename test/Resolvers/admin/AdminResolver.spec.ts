@@ -234,6 +234,29 @@ describe("Test Admin Resolver", () => {
         },
       },
     });
+    console.log(name);
+    getAdminsQuery = `{
+      getAdmins(name: "${name.slice(0, name.length - 2)}") {
+        data {
+          username 
+        }
+      }
+    }`;
+
+    response = await graphqlCall({
+      source: getAdminsQuery,
+      isAdmin: true,
+      token,
+      admin,
+    });
+
+    expect(response).toMatchObject({
+      data: {
+        getAdmins: {
+          data: [{ username: name }],
+        },
+      },
+    });
 
     getAdminsQuery = `{
       getAdmins(name: "${name.slice(0, name.length - 2)}") {

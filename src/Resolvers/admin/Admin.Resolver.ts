@@ -427,6 +427,7 @@ export class AdminResolver {
     return await Admin.findOne({ where: { id }, relations: ["group"] });
   }
 
+
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
   private async logout(@Ctx() ctx: ApiContext): Promise<boolean> {

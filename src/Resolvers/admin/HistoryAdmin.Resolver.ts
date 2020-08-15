@@ -20,6 +20,9 @@ export class HistoryAdminResolver {
     const params: FindManyOptions = {
       skip: limit * (page - 1),
       take: limit,
+      order: {
+        created_at: "DESC",
+      },
     };
 
     if (table) {

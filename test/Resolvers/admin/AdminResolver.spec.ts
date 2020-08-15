@@ -10,6 +10,7 @@ import { StateEnum } from "../../../src/@types/StateEnum";
 import { ForbiddenError } from "type-graphql";
 import { loginHelper } from "../../helpers/loginHelper";
 import { getAdmin } from "../../helpers/getAdmin";
+import { compareSync } from "bcryptjs";
 
 describe("Test Admin Resolver", () => {
   let conn: Connection;
@@ -196,12 +197,22 @@ describe("Test Admin Resolver", () => {
     done();
   });
 
-  it("Test get admins by email", async (done) => {
+  it("Test get admins by filter", async (done) => {
     const adminGroup = await createAdminGroupHelper();
     admin = await createAdminHelper(adminGroup);
     const token = await loginHelper(admin);
+    let name = "";
 
-    const getAdminsQuery = `{
+    for (let i = 0; i < 20; i++) {
+      admin = await createAdminHelper(
+        adminGroup,
+        StateEnum.Enabled,
+        faker.name.firstName() + " " + faker.name.lastName(),
+      );
+      name = admin.username;
+    }
+
+    let getAdminsQuery = `{
       getAdmins(email: "${admin.email}") {
         data {
           email 
@@ -209,7 +220,7 @@ describe("Test Admin Resolver", () => {
       }
     }`;
 
-    const response = await graphqlCall({
+    let response = await graphqlCall({
       source: getAdminsQuery,
       isAdmin: true,
       token,
@@ -220,6 +231,29 @@ describe("Test Admin Resolver", () => {
       data: {
         getAdmins: {
           data: [{ email: admin.email }],
+        },
+      },
+    });
+    console.log(name);
+    getAdminsQuery = `{
+      getAdmins(name: "${name.slice(0, name.length - 2)}") {
+        data {
+          username 
+        }
+      }
+    }`;
+
+    response = await graphqlCall({
+      source: getAdminsQuery,
+      isAdmin: true,
+      token,
+      admin,
+    });
+
+    expect(response).toMatchObject({
+      data: {
+        getAdmins: {
+          data: [{ username: name }],
         },
       },
     });
@@ -664,6 +698,53 @@ describe("Test Admin Resolver", () => {
 
     expect(admin.reset_password_token).not.toBeNull();
     expect(admin.reset_password_send_at).not.toBeNull();
+
+    done();
+  });
+
+  it("Test Admin update password", async (done) => {
+    const group = await createAdminGroupHelper();
+    admin = await createAdminHelper(group);
+    const token = await loginHelper(admin);
+
+    const form = {
+      id: admin.id,
+      username: faker.name.firstName(),
+      password: faker.random.alphaNumeric(10),
+    };
+
+    const createAdminMutation = `mutation createAdmin($id: String, $password: String, $username: String, $avatar: Upload) {
+      createAdmin(id: $id, password: $password, username: $username, avatar: $avatar)
+    }`;
+
+    await graphqlCall({
+      source: createAdminMutation,
+      value: form,
+      isAdmin: true,
+    });
+
+    const newPassword = faker.random.alphaNumeric(12);
+
+    const updatePasswordMutation = `mutation { 
+      updatePassword(password: "${form.password}", new_password: "${newPassword}")
+    }`;
+
+    const response = await graphqlCall({
+      source: updatePasswordMutation,
+      isAdmin: true,
+      admin,
+      token,
+    });
+
+    expect(response.data).toMatchObject({
+      updatePassword: true,
+    });
+
+    const check = await getAdmin(admin.id);
+
+    const isDone = await compareSync(newPassword, check.password);
+
+    expect(isDone).toBeTruthy();
 
     done();
   });

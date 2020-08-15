@@ -22,6 +22,10 @@ const main = async (): Promise<void> => {
   apolloAdminService.applyMiddleware({
     app,
     path: "/api/admin/graphql",
+    cors: {
+      origin: "http://localhost:8080",
+      credentials: true,
+    },
   });
 
   app.listen(4000, (): void => {

@@ -5,7 +5,7 @@ import { Admin } from "../src/entity/Admin";
 
 export const isAdmin: MiddlewareFn<ApiContext> = async ({ context }, next): Promise<unknown> => {
   try {
-    await Admin.findOneOrFail({
+    context.user = await Admin.findOneOrFail({
       where: {
         id: context.user.id,
       },

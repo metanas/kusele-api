@@ -6,7 +6,8 @@ import { Admin } from "../src/entity/Admin";
 export const Roles: AuthChecker<ApiContext> = async ({ context }, roles: string[]): Promise<boolean> => {
   const admin = await Admin.findOne({ where: { id: context.user.id }, relations: ["group"] });
 
-  if (admin.group?.permissions.includes(roles[0])) {
+  if (admin?.group?.permissions.includes(roles[0])) {
+    context.user = admin;
     return true;
   }
 

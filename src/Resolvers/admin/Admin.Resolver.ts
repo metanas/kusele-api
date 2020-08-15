@@ -8,7 +8,7 @@ import { Inject } from "typedi";
 import { ElasticServiceTesting } from "../../../test/test-utils/ElasticService";
 import { Mailer } from "../../utils/Mailer";
 import { StateEnum } from "../../@types/StateEnum";
-import { compare, hash } from "bcryptjs";
+import { compare, compareSync, hash } from "bcryptjs";
 import { ApiContext } from "../../@types/ApiContext";
 import { verify } from "jsonwebtoken";
 import { isAdmin } from "../../../middleware/isAdmin";
@@ -23,6 +23,7 @@ import { ManagedUpload } from "aws-sdk/clients/s3";
 import { S3Mock } from "../../../test/test-utils/S3Mock";
 import { AdminGroup } from "../../entity/AdminGroup";
 import { HistoryAdminAction } from "../../entity/HistoryAdminAction";
+import { PasswordArgs } from "../../modules/Args/PasswordArgs";
 
 @Resolver()
 export class AdminResolver {
@@ -70,7 +71,7 @@ export class AdminResolver {
     if (name || email) {
       params = {
         query: {
-          match_phrase: {
+          match_phrase_prefix: {
             username: name,
             email,
           },
@@ -342,6 +343,39 @@ export class AdminResolver {
       type_action: "DELETE",
       data: `DELETE FROM ADMIN WHERE id=${admin.id}`,
     }).save();
+
+    return true;
+  }
+
+  @UseMiddleware(isAdmin)
+  @Mutation(() => Boolean)
+  async updatePassword(@Ctx() ctx: ApiContext, @Args() { password, new_password }: PasswordArgs): Promise<boolean> {
+    const correct = await compareSync(password, ctx.user.password);
+
+    if (!correct) {
+      throw new Error("Wrong Password");
+    }
+
+    const encryptedPassword = await hash(new_password, 12);
+    await Admin.createQueryBuilder()
+      .update()
+      .set({
+        password: encryptedPassword,
+      })
+      .where("id=:id", { id: ctx.user.id })
+      .execute();
+
+    this.elasticService.client.update({
+      index: "admin",
+      id: ctx.user.id,
+      body: {
+        doc: {
+          password: encryptedPassword,
+        },
+      },
+    });
+
+    this.elasticService.client.indices.refresh();
 
     return true;
   }

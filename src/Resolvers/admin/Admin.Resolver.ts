@@ -380,6 +380,54 @@ export class AdminResolver {
     return true;
   }
 
+  @Authorized("Admin/editAdmin")
+  @Mutation(() => Admin)
+  public async editAdmin(
+    @Arg("id") id: string,
+    @Arg("username") username: string,
+    @Arg("group_id") group_id: number,
+    @Arg("avatar", () => GraphQLUpload) file?: FileUpload,
+  ): Promise<Admin> {
+    const admin = await Admin.findOne({ where: { id }, relations: ["group"] });
+
+    if (!admin) throw new Error("Admin Not Found!");
+
+    const group = await AdminGroup.findOne({ where: { id: group_id } });
+
+    if (!group) throw new Error("Admin Group Not Found!");
+
+    const data = {
+      username,
+      group,
+    };
+
+    if (file?.filename) {
+      const image = await this.AWSS3.S3.upload({
+        Key: `kusele-${v1()}`,
+        Body: file.createReadStream(),
+        Bucket: "kusele-storage",
+      }).promise();
+      set(data, "avatar", image.Location);
+    }
+
+    await Admin.createQueryBuilder().update().set(data).where("id=:id", { id }).execute();
+
+    await this.elasticService.client.update({
+      index: "admin",
+      id,
+      refresh: "true",
+      body: {
+        doc: {
+          ...data,
+          updated_at: new Date(),
+        },
+      },
+    });
+
+    return await Admin.findOne({ where: { id }, relations: ["group"] });
+  }
+
+
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
   private async logout(@Ctx() ctx: ApiContext): Promise<boolean> {

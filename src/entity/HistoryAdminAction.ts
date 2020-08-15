@@ -1,6 +1,6 @@
 import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Admin } from "./Admin";
-import { Field, ObjectType } from "type-graphql";
+import { Field, GraphQLISODateTime, ObjectType } from "type-graphql";
 
 @Entity()
 @ObjectType()
@@ -20,9 +20,9 @@ export class HistoryAdminAction extends BaseEntity {
   @Field()
   data: string;
 
-  @Field()
-  @CreateDateColumn()
-  create_at: string;
+  @Field(() => GraphQLISODateTime)
+  @CreateDateColumn({ type: "timestamp" })
+  created_at: string;
 
   @Field(() => Admin)
   @ManyToOne(() => Admin, { eager: true })

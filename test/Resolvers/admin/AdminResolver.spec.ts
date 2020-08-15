@@ -234,7 +234,7 @@ describe("Test Admin Resolver", () => {
         },
       },
     });
-    console.log(name);
+
     getAdminsQuery = `{
       getAdmins(name: "${name.slice(0, name.length - 2)}") {
         data {
@@ -745,6 +745,46 @@ describe("Test Admin Resolver", () => {
     const isDone = await compareSync(newPassword, check.password);
 
     expect(isDone).toBeTruthy();
+
+    done();
+  });
+
+  it("Test edit Admin", async (done) => {
+    const group = await createAdminGroupHelper();
+    admin = await createAdminHelper(group);
+    const token = await loginHelper(admin);
+
+    const adminToEdit = await createAdminHelper(group);
+
+    const data = {
+      username: faker.name.firstName(),
+      group: await createAdminGroupHelper(),
+    };
+
+    const editAdminMutation = `mutation { 
+      editAdmin(id: "${adminToEdit.id}", username: "${data.username}", group_id: ${data.group.id}) {
+        username
+        group {
+          name
+        }
+      }
+    }`;
+
+    const response = await graphqlCall({
+      admin,
+      source: editAdminMutation,
+      token,
+      isAdmin: true,
+    });
+
+    expect(response.data).toMatchObject({
+      editAdmin: {
+        username: data.username,
+        group: {
+          name: data.group.name,
+        },
+      },
+    });
 
     done();
   });

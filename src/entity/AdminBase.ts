@@ -1,16 +1,16 @@
 import { BaseEntity, CreateDateColumn, ManyToOne, UpdateDateColumn } from "typeorm";
 import { Admin } from "./Admin";
-import { Field, ObjectType } from "type-graphql";
+import { Field, GraphQLISODateTime, ObjectType } from "type-graphql";
 
 @ObjectType()
 export abstract class AdminBase extends BaseEntity {
-  @Field()
+  @Field(() => GraphQLISODateTime)
   @UpdateDateColumn({ type: "timestamp", nullable: true })
-  updated_at: string;
+  updated_at: Date;
 
-  @Field()
+  @Field(() => GraphQLISODateTime)
   @CreateDateColumn({ type: "timestamp" })
-  created_at: string;
+  created_at: Date;
 
   @ManyToOne(() => Admin, { nullable: true })
   created_by: Admin;

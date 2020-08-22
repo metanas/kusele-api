@@ -7,10 +7,11 @@ export const isAdmin: MiddlewareFn<ApiContext> = async ({ context }, next): Prom
   try {
     context.user = await Admin.findOneOrFail({
       where: {
-        id: context.user.id,
+        id: context.user?.id,
       },
     });
   } catch (e) {
+    context.res.status(401);
     throw new AuthenticationError("Not Authorized");
   }
 

@@ -91,7 +91,11 @@ export class AdminResolver {
       body: params,
     });
 
-    const data = body.hits.hits.map((hit: { _source: Record<string, unknown> }) => hit._source);
+    const data = body.hits.hits.map(({ _source }: { _source: Admin }) => ({
+      ..._source,
+      updated_at: new Date(_source.updated_at),
+      created_at: new Date(_source.created_at),
+    }));
     const total_count = body.hits.total.value;
 
     return {
@@ -126,6 +130,7 @@ export class AdminResolver {
       index: "admin",
       id: admin.id,
       body: admin,
+      refresh: "true",
     });
 
     await this.resendEmail(ctx, admin.id);
@@ -426,7 +431,6 @@ export class AdminResolver {
 
     return await Admin.findOne({ where: { id }, relations: ["group"] });
   }
-
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)

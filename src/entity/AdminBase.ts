@@ -9,7 +9,7 @@ export abstract class AdminBase extends BaseEntity {
   updated_at: Date;
 
   @Field(() => GraphQLISODateTime)
-  @CreateDateColumn({ type: "timestamp" })
+  @CreateDateColumn({ type: "timestamp", nullable: true })
   created_at: Date;
 
   @ManyToOne(() => Admin, { nullable: true })

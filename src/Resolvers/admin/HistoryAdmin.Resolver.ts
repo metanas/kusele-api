@@ -1,21 +1,19 @@
-import { Arg, Query, Resolver, Args, Authorized, UseMiddleware } from "type-graphql";
+import { Arg, Args, Authorized, Query, Resolver } from "type-graphql";
 import { HistoryAdminAction } from "../../entity/HistoryAdminAction";
-import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
+import { PaginatedRequestArgsBase } from "../../modules/Args/PaginatedRequestArgsBase";
 import { PaginatedHistoryResponse, PaginatedHistoryResponseType } from "../../@types/PaginatedResponseTypes";
 import { FindManyOptions } from "typeorm/find-options/FindManyOptions";
-import { set, ceil } from "lodash";
-import { isAdmin } from "../../../middleware/isAdmin";
+import { ceil, set } from "lodash";
 import { Like } from "typeorm";
 
 @Resolver()
 export class HistoryAdminResolver {
-  @UseMiddleware(isAdmin)
   @Authorized("HistoryAdmin/getHistory")
   @Query(() => PaginatedHistoryResponse)
   public async getHistory(
     @Arg("table", { nullable: true }) table: string,
     @Arg("type", { nullable: true }) type_action: string,
-    @Args() { page, limit }: PaginatedRequestArgs,
+    @Args() { page, limit }: PaginatedRequestArgsBase,
   ): Promise<PaginatedHistoryResponseType> {
     const params: FindManyOptions = {
       skip: limit * (page - 1),

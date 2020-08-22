@@ -1,7 +1,6 @@
 import { Arg, Args, Authorized, Ctx, ForbiddenError, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
 import { Admin } from "../../entity/Admin";
 import { PaginatedAdminResponse, PaginatedAdminResponseType } from "../../@types/PaginatedResponseTypes";
-import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
 import { ElasticService } from "../../utils/ElasticService";
 import { ceil, set } from "lodash";
 import { Inject } from "typedi";
@@ -16,14 +15,18 @@ import { randomBytes } from "crypto";
 import { AdminWhiteListJwt } from "../../entity/AdminWhiteListJwt";
 import { createAccessToken, createRefreshToken } from "../../utils/Authorization";
 import { redis } from "../../utils/redis";
-import { FileUpload, GraphQLUpload } from "graphql-upload";
 import { AwsS3 } from "../../utils/AwsS3";
 import { v1 } from "uuid";
 import { ManagedUpload } from "aws-sdk/clients/s3";
 import { S3Mock } from "../../../test/test-utils/S3Mock";
 import { AdminGroup } from "../../entity/AdminGroup";
 import { HistoryAdminAction } from "../../entity/HistoryAdminAction";
-import { PasswordArgs } from "../../modules/Args/PasswordArgs";
+import { UpdatePasswordArgs } from "../../modules/Args/admin/updatePasswordArgs";
+import { GetAdminsArgs } from "../../modules/Args/admin/getAdminsArgs";
+import { AddAdminArgs } from "../../modules/Args/admin/addAdminArgs";
+import { CreateAdminArgs } from "../../modules/Args/admin/createAdminArgs";
+import { LoginArgs } from "../../modules/Args/admin/loginArgs";
+import { EditAdminArgs } from "../../modules/Args/admin/editAdminArgs";
 
 @Resolver()
 export class AdminResolver {
@@ -43,7 +46,6 @@ export class AdminResolver {
     return (body as unknown) as Admin;
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("Admin/getAdmin")
   @Query(() => Admin)
   public async getAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<Admin> {
@@ -57,12 +59,10 @@ export class AdminResolver {
     return admin;
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("Admin/getAdmins")
   @Query(() => PaginatedAdminResponse)
   public async getAdmins(
-    @Arg("email") email: string,
-    @Args() { name, limit, page, order, sort }: PaginatedRequestArgs,
+    @Args() { email, name, limit, page, order, sort }: GetAdminsArgs,
   ): Promise<PaginatedAdminResponseType> {
     let params = {};
 
@@ -105,15 +105,10 @@ export class AdminResolver {
     };
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("Admin/addAdmin")
   @Mutation(() => Admin, { nullable: true })
-  private async addAdmin(
-    @Ctx() ctx: ApiContext,
-    @Arg("email") email: string,
-    @Arg("group_id", { nullable: false }) groupId: number,
-  ): Promise<Admin> {
-    const group = await AdminGroup.findOne({ where: { id: groupId } });
+  private async addAdmin(@Ctx() ctx: ApiContext, @Args() { email, group_id }: AddAdminArgs): Promise<Admin> {
+    const group = await AdminGroup.findOne({ where: { id: group_id } });
 
     if (!group) {
       ctx.res.status(401);
@@ -138,7 +133,6 @@ export class AdminResolver {
     return admin;
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("Admin/resetPassword")
   @Mutation(() => Boolean)
   private async resetPassword(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
@@ -173,7 +167,6 @@ export class AdminResolver {
     return true;
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("Admin/resetPassword")
   @Mutation(() => Boolean)
   private async resendEmail(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
@@ -195,16 +188,13 @@ export class AdminResolver {
   @Mutation(() => Boolean)
   public async createAdmin(
     @Ctx() { res }: ApiContext,
-    @Arg("id") id: string,
-    @Arg("password") password: string,
-    @Arg("username") username: string,
-    @Arg("avatar", () => GraphQLUpload) file?: FileUpload,
+    @Args() { id, username, password, avatar }: CreateAdminArgs,
   ): Promise<boolean> {
     let image: ManagedUpload.SendData = null;
-    if (file?.filename) {
+    if (avatar?.filename) {
       image = await this.AWSS3.S3.upload({
         Key: `kusele-${v1()}`,
-        Body: file.createReadStream(),
+        Body: avatar.createReadStream(),
         Bucket: "kusele-storage",
       }).promise();
     }
@@ -244,7 +234,6 @@ export class AdminResolver {
     return true;
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("Admin/adminToggleState")
   @Mutation(() => Admin)
   private async adminToggleState(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<Admin> {
@@ -281,11 +270,7 @@ export class AdminResolver {
   }
 
   @Mutation(() => Admin)
-  private async login(
-    @Ctx() ctx: ApiContext,
-    @Arg("username") username: string,
-    @Arg("password") password: string,
-  ): Promise<Admin> {
+  private async login(@Ctx() ctx: ApiContext, @Args() { password, username }: LoginArgs): Promise<Admin> {
     const admin = await Admin.createQueryBuilder("admin")
       .select()
       .innerJoinAndSelect("admin.group", "group")
@@ -322,7 +307,6 @@ export class AdminResolver {
     return admin;
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("Admin/deleteAdmin")
   @Mutation(() => Boolean)
   private async deleteAdmin(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
@@ -354,7 +338,10 @@ export class AdminResolver {
 
   @UseMiddleware(isAdmin)
   @Mutation(() => Boolean)
-  async updatePassword(@Ctx() ctx: ApiContext, @Args() { password, new_password }: PasswordArgs): Promise<boolean> {
+  async updatePassword(
+    @Ctx() ctx: ApiContext,
+    @Args() { password, new_password }: UpdatePasswordArgs,
+  ): Promise<boolean> {
     const correct = await compareSync(password, ctx.user.password);
 
     if (!correct) {
@@ -387,12 +374,7 @@ export class AdminResolver {
 
   @Authorized("Admin/editAdmin")
   @Mutation(() => Admin)
-  public async editAdmin(
-    @Arg("id") id: string,
-    @Arg("username") username: string,
-    @Arg("group_id") group_id: number,
-    @Arg("avatar", () => GraphQLUpload) file?: FileUpload,
-  ): Promise<Admin> {
+  public async editAdmin(@Args() { username, id, avatar, group_id }: EditAdminArgs): Promise<Admin> {
     const admin = await Admin.findOne({ where: { id }, relations: ["group"] });
 
     if (!admin) throw new Error("Admin Not Found!");
@@ -406,10 +388,10 @@ export class AdminResolver {
       group,
     };
 
-    if (file?.filename) {
+    if (avatar?.filename) {
       const image = await this.AWSS3.S3.upload({
         Key: `kusele-${v1()}`,
-        Body: file.createReadStream(),
+        Body: avatar.createReadStream(),
         Bucket: "kusele-storage",
       }).promise();
       set(data, "avatar", image.Location);
@@ -439,7 +421,7 @@ export class AdminResolver {
       const jid = verify(ctx.req.cookies.jid, process.env.REFRESH_TOKEN_SECRET) as Record<string, string>;
       await AdminWhiteListJwt.createQueryBuilder().delete().where("id=:id", { id: jid.id }).execute();
     } catch {
-      throw new Error("Something Wrong!");
+      return false;
     }
     return true;
   }

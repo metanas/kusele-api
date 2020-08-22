@@ -9,12 +9,13 @@ interface Options {
   value?: Maybe<{ [key: string]: unknown }>;
   isAdmin?: boolean;
   token?: string;
+  jid?: string;
   admin?: Admin;
 }
 
 let schema: GraphQLSchema;
 
-export const graphqlCall = async ({ source, value, isAdmin, token, admin }: Options): Promise<ExecutionResult> => {
+export const graphqlCall = async ({ source, value, isAdmin, token, jid, admin }: Options): Promise<ExecutionResult> => {
   if (!schema) {
     schema = await createSchema(isAdmin);
   }
@@ -27,6 +28,9 @@ export const graphqlCall = async ({ source, value, isAdmin, token, admin }: Opti
       req: {
         headers: {
           authorization: `Bearer ${token}`,
+        },
+        cookies: {
+          jid,
         },
       },
       res: {

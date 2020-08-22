@@ -3,7 +3,7 @@ import { IsInt, IsString, Max, Min } from "class-validator";
 import { OrderEnum } from "../../@types/OrderEnum";
 
 @ArgsType()
-export class PaginatedRequestArgs {
+export class PaginatedRequestArgsBase {
   @Field({ defaultValue: 1 })
   @IsInt()
   public page: number;

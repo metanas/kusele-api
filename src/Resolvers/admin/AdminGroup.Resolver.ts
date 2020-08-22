@@ -1,10 +1,9 @@
-import { Arg, Args, Authorized, Ctx, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
+import { Arg, Args, Authorized, Ctx, Mutation, Query, Resolver } from "type-graphql";
 import { PaginatedAdminGroupResponse, PaginatedAdminGroupResponseType } from "../../@types/PaginatedResponseTypes";
-import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
+import { PaginatedRequestArgsBase } from "../../modules/Args/PaginatedRequestArgsBase";
 import { ceil, set } from "lodash";
 import { AdminGroup } from "../../entity/AdminGroup";
 import { FindManyOptions, Like } from "typeorm";
-import { isAdmin } from "../../../middleware/isAdmin";
 import { AdminGroupArgs } from "../../modules/Args/adminGroupArgs";
 import { Admin } from "../../entity/Admin";
 import Permissions from "../../utils/permissions.json";
@@ -12,25 +11,22 @@ import { ApiContext } from "../../@types/ApiContext";
 
 @Resolver()
 export class AdminGroupResolver {
-  @UseMiddleware(isAdmin)
   @Authorized("AdminGroup/getPermissions")
   @Query(() => [String])
   private async getPermissions(): Promise<string[]> {
     return Permissions;
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("AdminGroup/getAdminGroup")
   @Query(() => AdminGroup)
   public async getAdminGroup(@Arg("id") id: string): Promise<AdminGroup> {
     return await AdminGroup.findOne({ where: { id } });
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("AdminGroup/getAdminGroups")
   @Query(() => PaginatedAdminGroupResponse)
   public async getAdminGroups(
-    @Args() { name, limit, page }: PaginatedRequestArgs,
+    @Args() { name, limit, page }: PaginatedRequestArgsBase,
   ): Promise<PaginatedAdminGroupResponseType> {
     const options: FindManyOptions = { skip: (page - 1) * limit, take: limit, order: { id: "ASC" } };
 
@@ -47,7 +43,6 @@ export class AdminGroupResolver {
     };
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("AdminGroup/addAdminGroup")
   @Mutation(() => AdminGroup)
   public async addAdminGroup(@Args() { name, permissions }: AdminGroupArgs): Promise<AdminGroup> {
@@ -57,7 +52,6 @@ export class AdminGroupResolver {
     }).save();
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("AdminGroup/updateAdminGroup")
   @Mutation(() => AdminGroup)
   private async updateAdminGroup(
@@ -78,7 +72,6 @@ export class AdminGroupResolver {
     return await AdminGroup.findOne({ where: { id } });
   }
 
-  @UseMiddleware(isAdmin)
   @Authorized("AdminGroup/deleteAdminGroup")
   @Mutation(() => Boolean)
   private async deleteAdminGroup(@Arg("id") id: string): Promise<boolean> {

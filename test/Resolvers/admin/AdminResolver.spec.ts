@@ -328,7 +328,7 @@ describe("Test Admin Resolver", () => {
       password: faker.random.alphaNumeric(10),
     };
 
-    const createAdminMutation = `mutation createAdmin($id: String, $password: String, $username: String, $avatar: Upload) {
+    const createAdminMutation = `mutation createAdmin($id: String!, $password: String!, $username: String!, $avatar: Upload) {
       createAdmin(id: $id, password: $password, username: $username, avatar: $avatar)
     }`;
 
@@ -736,7 +736,7 @@ describe("Test Admin Resolver", () => {
       password: faker.random.alphaNumeric(10),
     };
 
-    const createAdminMutation = `mutation createAdmin($id: String, $password: String, $username: String, $avatar: Upload) {
+    const createAdminMutation = `mutation createAdmin($id: String!, $password: String!, $username: String!, $avatar: Upload) {
       createAdmin(id: $id, password: $password, username: $username, avatar: $avatar)
     }`;
 
@@ -758,7 +758,7 @@ describe("Test Admin Resolver", () => {
       admin,
       token,
     });
-
+    console.log(updatePasswordMutation, response.errors);
     expect(response.data).toMatchObject({
       updatePassword: true,
     });
@@ -809,6 +809,28 @@ describe("Test Admin Resolver", () => {
       },
     });
 
+    done();
+  });
+
+  it("Test logout", async (done) => {
+    const group = await createAdminGroupHelper();
+    admin = await createAdminHelper(group);
+    const token = await loginHelper(admin);
+
+    const logoutMutation = `mutation {
+      logout
+    }`;
+
+    const response = await graphqlCall({
+      source: logoutMutation,
+      isAdmin: true,
+      token,
+      admin,
+    });
+
+    expect(response.data).toMatchObject({
+      logout: false,
+    });
     done();
   });
 });

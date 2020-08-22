@@ -2,7 +2,7 @@ import { Arg, Query, Resolver, Args } from "type-graphql";
 import { Product } from "../../entity/Product";
 import { ElasticService } from "../../utils/ElasticService";
 import { PaginatedProductResponse, PaginatedProductResponseType } from "../../@types/PaginatedResponseTypes";
-import { PaginatedRequestArgs } from "../../modules/Args/PaginatedRequestArgs";
+import { PaginatedRequestArgsBase } from "../../modules/Args/PaginatedRequestArgsBase";
 import { ceil } from "lodash";
 import { Inject } from "typedi";
 
@@ -19,7 +19,9 @@ export class ProductResolver {
   }
 
   @Query(() => PaginatedProductResponse)
-  public async getProducts(@Args() { page, limit, name }: PaginatedRequestArgs): Promise<PaginatedProductResponseType> {
+  public async getProducts(
+    @Args() { page, limit, name }: PaginatedRequestArgsBase,
+  ): Promise<PaginatedProductResponseType> {
     let params = {};
 
     if (name) {

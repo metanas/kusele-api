@@ -125,7 +125,7 @@ export class AdminResolver {
       index: "admin",
       id: admin.id,
       body: admin,
-      refresh: "true",
+      refresh: true,
     });
 
     await this.resendEmail(ctx, admin.id);
@@ -225,7 +225,7 @@ export class AdminResolver {
     await this.elasticService.client.update({
       index: "admin",
       id,
-      refresh: "true",
+      refresh: true,
       body: {
         doc: data,
       },
@@ -319,7 +319,7 @@ export class AdminResolver {
     await this.elasticService.client.delete({
       index: "admin",
       id,
-      refresh: "true",
+      refresh: true,
     });
 
     const creator = await Admin.findOne({ where: { id: ctx.user.id } });
@@ -402,7 +402,7 @@ export class AdminResolver {
     await this.elasticService.client.update({
       index: "admin",
       id,
-      refresh: "true",
+      refresh: true,
       body: {
         doc: {
           ...data,

@@ -125,7 +125,7 @@ export class AdminResolver {
       index: "admin",
       id: admin.id,
       body: admin,
-      refresh: "true",
+      refresh: true,
     });
 
     await this.resendEmail(ctx, admin.id);
@@ -225,7 +225,7 @@ export class AdminResolver {
     await this.elasticService.client.update({
       index: "admin",
       id,
-      refresh: "true",
+      refresh: true,
       body: {
         doc: data,
       },
@@ -298,8 +298,13 @@ export class AdminResolver {
       admin,
     }).save();
 
-    ctx.res.set("Access-Control-Expose-Headers", ["x-refresh-token", "x-token"]);
-    ctx.res.set("x-refresh-token", createRefreshToken({ id: jit.id, version: jit.version }));
+    ctx.res.cookie("jid", createRefreshToken({ id: jit.id, version: jit.version }), {
+      path: "/",
+      expires: jit.expire_at,
+      httpOnly: true,
+    });
+
+    ctx.res.set("Access-Control-Expose-Headers", ["x-token"]);
     ctx.res.set("x-token", createAccessToken({ id: admin.id }));
 
     await redis.set(jit.id, JSON.stringify({ ...admin, version: jit.version }));
@@ -319,7 +324,7 @@ export class AdminResolver {
     await this.elasticService.client.delete({
       index: "admin",
       id,
-      refresh: "true",
+      refresh: true,
     });
 
     const creator = await Admin.findOne({ where: { id: ctx.user.id } });
@@ -402,7 +407,7 @@ export class AdminResolver {
     await this.elasticService.client.update({
       index: "admin",
       id,
-      refresh: "true",
+      refresh: true,
       body: {
         doc: {
           ...data,
@@ -420,6 +425,7 @@ export class AdminResolver {
     try {
       const jid = verify(ctx.req.cookies.jid, process.env.REFRESH_TOKEN_SECRET) as Record<string, string>;
       await AdminWhiteListJwt.createQueryBuilder().delete().where("id=:id", { id: jid.id }).execute();
+      ctx.res.clearCookie("jid");
     } catch {
       return false;
     }

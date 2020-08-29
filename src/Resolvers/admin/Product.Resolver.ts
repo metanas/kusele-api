@@ -52,7 +52,7 @@ export class ProductResolver {
       index: "product",
       id: product.id,
       body: product,
-      refresh: "true",
+      refresh: true,
     });
 
     return product;

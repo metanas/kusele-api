@@ -18,7 +18,7 @@ export async function createAdminHelper(group: AdminGroup, active = StateEnum.Ne
     index: "admin",
     id: admin.id,
     body: admin,
-    refresh: "true",
+    refresh: true,
   });
 
   elastic.close();

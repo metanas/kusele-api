@@ -5,6 +5,7 @@ import { PaginatedHistoryResponse, PaginatedHistoryResponseType } from "../../@t
 import { FindManyOptions } from "typeorm/find-options/FindManyOptions";
 import { ceil, set } from "lodash";
 import { Like } from "typeorm";
+import { Admin } from "../../entity/Admin";
 
 @Resolver()
 export class HistoryAdminResolver {
@@ -13,6 +14,7 @@ export class HistoryAdminResolver {
   public async getHistory(
     @Arg("table", { nullable: true }) table: string,
     @Arg("type", { nullable: true }) type_action: string,
+    @Arg("admin_id", { nullable: true }) admin_id: string,
     @Args() { page, limit }: PaginatedRequestArgsBase,
   ): Promise<PaginatedHistoryResponseType> {
     const params: FindManyOptions = {
@@ -22,6 +24,11 @@ export class HistoryAdminResolver {
         created_at: "DESC",
       },
     };
+
+    if (admin_id) {
+      const admin = await Admin.findOne({ where: { id: admin_id } });
+      set(params, "where.creator", admin);
+    }
 
     if (table) {
       set(params, "where.table_name", Like(`%${table}%`));

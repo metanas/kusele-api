@@ -8,6 +8,7 @@ import { AdminGroupArgs } from "../../modules/Args/adminGroupArgs";
 import { Admin } from "../../entity/Admin";
 import Permissions from "../../utils/permissions.json";
 import { ApiContext } from "../../@types/ApiContext";
+import { HistoryAdminAction } from "../../entity/HistoryAdminAction";
 
 @Resolver()
 export class AdminGroupResolver {
@@ -19,7 +20,7 @@ export class AdminGroupResolver {
 
   @Authorized("AdminGroup/getAdminGroup")
   @Query(() => AdminGroup)
-  public async getAdminGroup(@Arg("id") id: string): Promise<AdminGroup> {
+  public async getAdminGroup(@Arg("id") id: number): Promise<AdminGroup> {
     return await AdminGroup.findOne({ where: { id } });
   }
 
@@ -74,7 +75,7 @@ export class AdminGroupResolver {
 
   @Authorized("AdminGroup/deleteAdminGroup")
   @Mutation(() => Boolean)
-  private async deleteAdminGroup(@Arg("id") id: string): Promise<boolean> {
+  private async deleteAdminGroup(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
     const group = await AdminGroup.findOne({ where: { id } });
 
     const admins = await Admin.count({ where: { group } });
@@ -84,6 +85,15 @@ export class AdminGroupResolver {
     }
 
     await group.remove();
+
+    const admin = await Admin.findOne({ where: { id: ctx.user.id } });
+
+    await HistoryAdminAction.create({
+      type_action: "DELETE",
+      creator: admin,
+      data: `DELETE FROM admin_group where id=$1 params => [${id}]`,
+      table_name: "admin_group",
+    }).save();
 
     return true;
   }

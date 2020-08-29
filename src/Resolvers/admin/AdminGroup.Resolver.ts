@@ -57,7 +57,7 @@ export class AdminGroupResolver {
   @Mutation(() => AdminGroup)
   private async updateAdminGroup(
     @Ctx() ctx: ApiContext,
-    @Arg("id", { nullable: false }) id: string,
+    @Arg("id", { nullable: false }) id: number,
     @Args() { name, permissions }: AdminGroupArgs,
   ): Promise<AdminGroup> {
     await AdminGroup.createQueryBuilder()
@@ -75,7 +75,7 @@ export class AdminGroupResolver {
 
   @Authorized("AdminGroup/deleteAdminGroup")
   @Mutation(() => Boolean)
-  private async deleteAdminGroup(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<boolean> {
+  private async deleteAdminGroup(@Ctx() ctx: ApiContext, @Arg("id") id: number): Promise<boolean> {
     const group = await AdminGroup.findOne({ where: { id } });
 
     const admins = await Admin.count({ where: { group } });

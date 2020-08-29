@@ -80,7 +80,7 @@ describe("Test AdminGroup Resolver", () => {
       permissions.push(faker.name.jobType());
     }
 
-    const updateAdminGroupMutation = `mutation updateAdminGroup($id: String!, $name: String!, $permissions: [String!]!) {
+    const updateAdminGroupMutation = `mutation updateAdminGroup($id: Float!, $name: String!, $permissions: [String!]!) {
       updateAdminGroup(id: $id, name: $name, permissions: $permissions) {
         name
         permissions
@@ -93,7 +93,7 @@ describe("Test AdminGroup Resolver", () => {
       token,
       admin,
       value: {
-        id: adminGroup.id.toString(),
+        id: adminGroup.id,
         name,
         permissions,
       },
@@ -113,7 +113,7 @@ describe("Test AdminGroup Resolver", () => {
     const adminGroup = await createAdminGroupHelper();
 
     const deleteAdminGroupMutation = `mutation {
-      deleteAdminGroup(id: "${adminGroup.id}") 
+      deleteAdminGroup(id: ${adminGroup.id}) 
     }`;
 
     const response = await graphqlCall({
@@ -135,7 +135,7 @@ describe("Test AdminGroup Resolver", () => {
     await createAdminHelper(adminGroup);
 
     const deleteAdminGroupMutation = `mutation {
-      deleteAdminGroup(id: "${adminGroup.id}") 
+      deleteAdminGroup(id: ${adminGroup.id}) 
     }`;
 
     const response = await graphqlCall({
@@ -152,7 +152,7 @@ describe("Test AdminGroup Resolver", () => {
 
   it("Test Get Admin Group by ID", async (done) => {
     const getAdminGroupQuery = `{
-      getAdminGroup(id: "${admin.group.id}") {
+      getAdminGroup(id: ${admin.group.id}) {
         id
         name
         permissions

@@ -9,6 +9,7 @@ export class Mailer {
         from: "no-reply@kusele.com",
       },
       send: true,
+      preview: true,
       transport: {
         jsonTransport: true,
       },

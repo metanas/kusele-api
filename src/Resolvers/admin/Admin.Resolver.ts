@@ -52,7 +52,6 @@ export class AdminResolver {
     const admin = await Admin.findOne({ where: { id }, relations: ["group"] });
 
     if (!admin) {
-      ctx.res.status(404);
       throw new Error("Admin not found!");
     }
 
@@ -111,7 +110,6 @@ export class AdminResolver {
     const group = await AdminGroup.findOne({ where: { id: group_id } });
 
     if (!group) {
-      ctx.res.status(401);
       throw new Error("Admin group not found");
     }
 
@@ -204,7 +202,6 @@ export class AdminResolver {
     });
 
     if (body.state !== StateEnum.New) {
-      res.status(403);
       throw new ForbiddenError();
     }
 
@@ -238,7 +235,6 @@ export class AdminResolver {
   @Mutation(() => Admin)
   private async adminToggleState(@Ctx() ctx: ApiContext, @Arg("id") id: string): Promise<Admin> {
     if (ctx.user.id === id) {
-      ctx.res.status(403);
       throw new ForbiddenError();
     }
 
@@ -285,12 +281,10 @@ export class AdminResolver {
     const isCorrect = await compare(password, admin.password || "");
 
     if (!isCorrect) {
-      ctx.res.status(401);
       throw new Error("Invalid password!");
     }
 
     if (admin.state !== StateEnum.Enabled) {
-      ctx.res.status(403);
       throw new Error("Your account is inactive, please contact support for more information!");
     }
 

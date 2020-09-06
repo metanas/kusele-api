@@ -11,7 +11,5 @@ export const Roles: AuthChecker<ApiContext> = async ({ context }, roles: string[
     return true;
   }
 
-  context.res.status(401);
-
   throw new ForbiddenError("You don't have Permission");
 };

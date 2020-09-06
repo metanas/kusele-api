@@ -11,7 +11,6 @@ export const isAdmin: MiddlewareFn<ApiContext> = async ({ context }, next): Prom
       },
     });
   } catch (e) {
-    context.res.status(401);
     throw new AuthenticationError("Not Authorized");
   }
 

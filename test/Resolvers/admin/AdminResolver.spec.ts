@@ -129,7 +129,7 @@ describe("Test Admin Resolver", () => {
     const token = await loginHelper(admin);
 
     const getAdminsQuery = `{
-      getAdmins(order: "create_at") {
+      getAdmins(order: "created_at") {
         data {
           email 
         }

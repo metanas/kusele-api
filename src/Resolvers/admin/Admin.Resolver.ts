@@ -184,10 +184,7 @@ export class AdminResolver {
   }
 
   @Mutation(() => Boolean)
-  public async createAdmin(
-    @Ctx() { res }: ApiContext,
-    @Args() { id, username, password, avatar }: CreateAdminArgs,
-  ): Promise<boolean> {
+  public async createAdmin(@Args() { id, username, password, avatar }: CreateAdminArgs): Promise<boolean> {
     let image: ManagedUpload.SendData = null;
     if (avatar?.filename) {
       image = await this.AWSS3.S3.upload({

@@ -1,8 +1,14 @@
 import { Connection, createConnection } from "typeorm";
 import * as dotenv from "dotenv";
+import { BuildElastic } from "../../src/utils/buildElastic";
+import { ElasticServiceTesting } from "./ElasticService";
 
 dotenv.config();
-export const connection = (drop = false): Promise<Connection> => {
+export const connection = async (drop = false): Promise<Connection> => {
+  const elastic = new ElasticServiceTesting();
+  await BuildElastic(elastic);
+  await elastic.client.close();
+
   return createConnection({
     type: "postgres",
     host: "localhost",

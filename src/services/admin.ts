@@ -8,8 +8,13 @@ import { last, set } from "lodash";
 import { verify } from "jsonwebtoken";
 import { Roles } from "../../middleware/Roles";
 import { AwsS3 } from "../utils/AwsS3";
+import { SchemaDirectiveVisitor } from "graphql-tools";
+import DeprecatedDirective from "./Directives/DeprecatedDirective";
+import InternationalizationDirective from "./Directives/InternationalizationDirective";
+import { BuildElastic } from "../utils/buildElastic";
 
-Container.set("elasticSearch", new ElasticService());
+const elasticSearch = new ElasticService();
+Container.set("elasticSearch", elasticSearch);
 Container.set("S3", new AwsS3());
 
 export const createApolloAdminService = async (): Promise<ApolloServer> => {
@@ -19,6 +24,11 @@ export const createApolloAdminService = async (): Promise<ApolloServer> => {
     authChecker: Roles,
     container: Container,
   });
+
+  await BuildElastic(elasticSearch);
+
+  SchemaDirectiveVisitor.visitSchemaDirectives(schema, { deprecated: DeprecatedDirective });
+  SchemaDirectiveVisitor.visitSchemaDirectives(schema, { inter: InternationalizationDirective });
 
   return new ApolloServer({
     schema,

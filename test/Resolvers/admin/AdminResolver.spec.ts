@@ -129,7 +129,7 @@ describe("Test Admin Resolver", () => {
     const token = await loginHelper(admin);
 
     const getAdminsQuery = `{
-      getAdmins(order: "create_at") {
+      getAdmins(order: "created_at") {
         data {
           email 
         }
@@ -758,7 +758,6 @@ describe("Test Admin Resolver", () => {
       admin,
       token,
     });
-    console.log(updatePasswordMutation, response.errors);
     expect(response.data).toMatchObject({
       updatePassword: true,
     });

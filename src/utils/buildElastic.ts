@@ -11,8 +11,8 @@ export async function BuildElastic(elastic: ElasticService | ElasticServiceTesti
   }
 
   const supplier = await elastic.client.indices.exists({ index: "supplier" });
-
-  if (!supplier) {
+  console.log(supplier.body);
+  if (!supplier.body) {
     await elastic.client.indices.create({
       index: "supplier",
     });

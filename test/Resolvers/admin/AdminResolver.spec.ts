@@ -758,7 +758,6 @@ describe("Test Admin Resolver", () => {
       admin,
       token,
     });
-    console.log(updatePasswordMutation, response.errors);
     expect(response.data).toMatchObject({
       updatePassword: true,
     });

@@ -5,11 +5,15 @@ import { Container } from "typedi";
 import { ElasticServiceTesting } from "./ElasticService";
 import { Roles } from "../../middleware/Roles";
 import { S3Mock } from "./S3Mock";
+import { BuildElastic } from "../../src/utils/buildElastic";
 
-Container.set("elasticSearch", new ElasticServiceTesting());
+const elastic = new ElasticServiceTesting();
+Container.set("elasticSearch", elastic);
 Container.set("S3", S3Mock);
 
-export const createSchema = (isAdmin = false): Promise<GraphQLSchema> => {
+export const createSchema = async (isAdmin = false): Promise<GraphQLSchema> => {
+  await BuildElastic(elastic);
+
   return buildSchema({
     resolvers: [
       isAdmin

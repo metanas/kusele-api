@@ -1,4 +1,4 @@
-import { Arg, Args, Ctx, Mutation, Query, Resolver } from "type-graphql";
+import { Arg, Args, Authorized, Ctx, Mutation, Query, Resolver } from "type-graphql";
 import { Inject } from "typedi";
 import { ElasticService } from "../../utils/ElasticService";
 import { ElasticServiceTesting } from "../../../test/test-utils/ElasticService";
@@ -20,6 +20,7 @@ export class SupplierResolver {
   @Inject("S3")
   AWS_s3: AwsS3 | S3Mock;
 
+  @Authorized("Supplier/getSuppliers")
   @Query(() => PaginatedSupplierResponse)
   async getSuppliers(
     @Args() { name, order, page, limit, sort }: PaginatedRequestArgsBase,
@@ -65,6 +66,7 @@ export class SupplierResolver {
     };
   }
 
+  @Authorized("Supplier/createSupplier")
   @Mutation(() => Supplier)
   async createSupplier(
     @Ctx() { user }: ApiContext,
@@ -79,6 +81,7 @@ export class SupplierResolver {
 
     await this.elasticService.client.index({
       index: "supplier",
+      id: supplier.id,
       body: supplier,
       refresh: true,
     });
@@ -86,6 +89,7 @@ export class SupplierResolver {
     return supplier;
   }
 
+  @Authorized("Supplier/supplierToggleState")
   @Mutation(() => Supplier)
   async supplierToggleState(@Ctx() { user }: ApiContext, @Arg("id") id: string): Promise<Supplier> {
     const supplier = await Supplier.findOne({ where: { id } });

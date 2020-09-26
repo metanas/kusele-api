@@ -11,6 +11,7 @@ import { ceil } from "lodash";
 import { CreateSupplierArgs } from "../../modules/Args/supplier/createSupplierArgs";
 import { ApiContext } from "../../@types/ApiContext";
 import { StateEnum } from "../../@types/StateEnum";
+import { HistoryAdminAction } from "../../entity/HistoryAdminAction";
 
 @Resolver()
 export class SupplierResolver {
@@ -121,5 +122,32 @@ export class SupplierResolver {
     });
 
     return supplier;
+  }
+
+  @Authorized("Supplier/supplierToggleState")
+  @Mutation(() => Boolean)
+  async deleteSupplier(@Ctx() { user }: ApiContext, @Arg("id", { nullable: false }) id: string): Promise<boolean> {
+    const supplier = await Supplier.findOne({ where: { id } });
+
+    if (!supplier && supplier.state !== StateEnum.New) {
+      throw new Error("You can delete this supplier");
+    }
+
+    await Supplier.createQueryBuilder().delete().where("id=:id", { id }).execute();
+
+    await this.elasticService.client.delete({
+      index: "supplier",
+      id,
+      refresh: true,
+    });
+
+    await HistoryAdminAction.create({
+      creator: user,
+      table_name: `"supplier"`,
+      type_action: "DELETE",
+      data: `DELETE FROM supplier WHERE id=${id}`,
+    }).save();
+
+    return true;
   }
 }

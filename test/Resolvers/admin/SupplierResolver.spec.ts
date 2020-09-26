@@ -169,4 +169,25 @@ describe("Supplier Resolver Test", () => {
       },
     });
   });
+
+  it("Test Delete Supplier", async (done) => {
+    const supplier = await createSupplierHelper(admin, StateEnum.New);
+
+    const deleteSupplierMutation = `mutation {
+      deleteSupplier(id: "${supplier.id}") 
+    }`;
+
+    const response = await graphqlCall({
+      source: deleteSupplierMutation,
+      isAdmin: true,
+      admin,
+      token,
+    });
+
+    expect(response.data).toMatchObject({
+      deleteSupplier: true,
+    });
+
+    done();
+  });
 });
